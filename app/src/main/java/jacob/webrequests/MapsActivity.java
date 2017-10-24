@@ -16,6 +16,9 @@ import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.Polyline;
+import com.google.android.gms.maps.model.PolylineOptions;
+import android.graphics.Color;
 import com.google.gson.Gson;
 
 import android.util.Log;
@@ -61,8 +64,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mMap = googleMap;
 
         // Add a marker in Sydney and move the camera
-        LatLng sydney = new LatLng(-34, 151);
-        mMap.addMarker(new MarkerOptions().position(sydney).title("Marker in Sydney"));
+        LatLng sydney = new LatLng(47.609809, -122.320826);
         mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney));
         getStops();
         getStreetcars();
@@ -97,19 +99,36 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         final ArrayList<Stop> stops = new ArrayList<>();
 
         WebRequest wr = new WebRequest();
-        wr.stopsRoutesJsonRequest(queue, url, new OnTaskCompleted() {
+        wr.stopsRoutesJsonRequest(queue, url, new FetchedStopsAndRoutes() {
             @Override
-            public void onTaskCompleted(JSONArray response) {
+            public void onTaskCompleted(JSONArray stopsArray, JSONArray paths) {
                 Gson gson = new Gson();
 
-                for (int i = 0; i < response.length(); i++) {
+                for (int i = 0; i < stopsArray.length(); i++) {
                     try {
-                        Log.v("Stop response", response.toString());
-                        Stop stop = gson.fromJson(response.getJSONObject(i).toString(), Stop.class);
+                        Log.v("Stop response", stopsArray.toString());
+                        Stop stop = gson.fromJson(stopsArray.getJSONObject(i).toString(), Stop.class);
                         stops.add(stop);
                     }
                     catch (JSONException error) {
                         Log.v("Error", "Error getting JSON Object");
+                    }
+                }
+
+                for (int i = 0; i < paths.length(); i++) {
+                    try {
+                        JSONObject obj = paths.getJSONObject(i);
+                        JSONArray currentPath = obj.getJSONArray("point");
+                        ArrayList<LatLng> points = new ArrayList<>();
+
+                        for (int j = 0; j < currentPath.length(); j++) {
+                            points.add(new LatLng(currentPath.getJSONObject(j).optDouble("lat"), currentPath.getJSONObject(j).optDouble("lon")));
+                        }
+
+                        drawRouteLines(points);
+                    }
+                    catch(JSONException error) {
+                        Log.v("Error", "Error getting path");
                     }
                 }
 
@@ -127,11 +146,15 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     public void drawStops(ArrayList<Stop> stops) {
         for (int i = 0; i < stops.size(); i++) {
-//            Stop stop = stops.get(i);
             LatLng location = new LatLng(stops.get(i).lat, stops.get(i).lon);
             mMap.addMarker(new MarkerOptions().position(location));
-
-//            Log.v("In draw", stops.get(i).toString());
         }
+    }
+
+    public void drawRouteLines(ArrayList<LatLng> points) {
+        mMap.addPolyline(new PolylineOptions()
+            .addAll(points)
+            .width(5)
+            .color(Color.RED));
     }
 }

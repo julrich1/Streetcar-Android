@@ -59,7 +59,7 @@ public class WebRequest {
         queue.add(jsArrayRequest);
     }
 
-    public void stopsRoutesJsonRequest(RequestQueue queue, final String url, final OnTaskCompleted callback) {
+    public void stopsRoutesJsonRequest(RequestQueue queue, final String url, final FetchedStopsAndRoutes callback) {
         JsonObjectRequest jsObjectRequest = new JsonObjectRequest
                 (Request.Method.GET, url, null, new Response.Listener<JSONObject>() {
 
@@ -68,12 +68,12 @@ public class WebRequest {
                         try {
                             JSONObject route = response.getJSONObject("route");
 
-                            JSONArray path = route.getJSONArray("path");
+                            JSONArray paths = route.getJSONArray("path");
                             JSONArray stops = route.getJSONArray("stop");
 
 
-                            Log.v("Response", stops.toString());
-                            callback.onTaskCompleted(stops);
+//                            Log.v("Response", stops.toString());
+                            callback.onTaskCompleted(stops, paths);
                         }
                         catch (JSONException error) {
                             Log.v("Error", "There was an error converting Object to array " + error.toString());
