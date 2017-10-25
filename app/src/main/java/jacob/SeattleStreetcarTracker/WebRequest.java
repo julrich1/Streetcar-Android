@@ -19,26 +19,6 @@ import org.json.JSONObject;
  */
 
 public class WebRequest {
-    public void makeRequest(RequestQueue queue, String url) {
-        StringRequest stringRequest = new StringRequest(Request.Method.GET, url,
-                new Response.Listener<String>() {
-                    @Override
-                    public void onResponse(String response) {
-                        // Display the first 500 characters of the response string.
-//                        mTextView.setText("Response is: "+ response.substring(0,500));
-                        Log.v("Response", response.substring(0, 500));
-                    }
-                }, new Response.ErrorListener() {
-            @Override
-            public void onErrorResponse(VolleyError error) {
-//                mTextView.setText("That didn't work!");
-                Log.v("Error", error.toString());
-            }
-        });
-
-        queue.add(stringRequest);
-    }
-
     public void streetcarJsonRequest(RequestQueue queue, final String url, final FetchStreetcars callback) {
         JsonArrayRequest jsArrayRequest = new JsonArrayRequest
             (Request.Method.GET, url, null, new Response.Listener<JSONArray>() {
@@ -71,8 +51,6 @@ public class WebRequest {
                             JSONArray paths = route.getJSONArray("path");
                             JSONArray stops = route.getJSONArray("stop");
 
-
-//                            Log.v("Response", stops.toString());
                             callback.onTaskCompleted(stops, paths);
                         }
                         catch (JSONException error) {
