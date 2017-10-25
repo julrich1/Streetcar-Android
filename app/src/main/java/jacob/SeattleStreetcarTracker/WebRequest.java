@@ -1,4 +1,4 @@
-package jacob.webrequests;
+package jacob.SeattleStreetcarTracker;
 
 import android.util.Log;
 

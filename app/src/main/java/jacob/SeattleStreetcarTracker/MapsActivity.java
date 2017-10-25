@@ -1,29 +1,19 @@
-package jacob.webrequests;
+package jacob.SeattleStreetcarTracker;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.os.CountDownTimer;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 
-import com.android.volley.Request;
 import com.android.volley.RequestQueue;
-import com.android.volley.Response;
-import com.android.volley.VolleyError;
-import com.android.volley.toolbox.JsonObjectRequest;
-import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
-import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
-import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
-import android.graphics.Color;
 import com.google.gson.Gson;
 
 import android.util.Log;
@@ -32,11 +22,9 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.concurrent.CountDownLatch;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
 
@@ -168,7 +156,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             .position(location)
             .icon(BitmapDescriptorFactory.fromBitmap(resizeMapIcons("streetcar",150,150)))
             .title("Info")
-//            .anchor(0.5f, 0.5f)
+            .anchor(0.5f, 0.5f)
             .rotation(streetcar.heading)
             .zIndex(1.0f);
     }

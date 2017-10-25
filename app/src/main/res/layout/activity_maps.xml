@@ -8,4 +8,4 @@
     map:cameraZoom="15"
     map:cameraTargetLat="47.609809"
     map:cameraTargetLng="-122.320826"
-    tools:context="jacob.webrequests.MapsActivity" />
+    tools:context="jacob.SeattleStreetcarTracker.MapsActivity" />

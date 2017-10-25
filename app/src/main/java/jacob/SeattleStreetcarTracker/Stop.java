@@ -1,4 +1,4 @@
-package jacob.webrequests;
+package jacob.SeattleStreetcarTracker;
 
 /**
  * Created by jacob on 10/24/17.

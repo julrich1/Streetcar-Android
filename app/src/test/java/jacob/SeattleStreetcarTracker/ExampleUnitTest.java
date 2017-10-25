@@ -1,4 +1,4 @@
-package jacob.webrequests;
+package jacob.SeattleStreetcarTracker;
 
 import org.junit.Test;
 

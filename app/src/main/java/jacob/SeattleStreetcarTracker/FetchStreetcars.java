@@ -1,7 +1,6 @@
-package jacob.webrequests;
+package jacob.SeattleStreetcarTracker;
 
 import org.json.JSONArray;
-import org.json.JSONObject;
 
 /**
  * Created by jacob on 10/24/17.
