@@ -32,6 +32,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     private GoogleMap mMap;
     public Streetcars streetcars = new Streetcars();
+    Timer scTimer = new Timer();
 
     RequestQueue queue;
 
@@ -48,6 +49,22 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     @Override
+    protected void onPause() {
+        super.onPause();
+
+        Log.v("Event pause", "onPause() was called");
+        scTimer.cancel();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        scTimer = new Timer();
+        startTimers();
+    }
+
+    @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
 
@@ -59,18 +76,22 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         getStreetcars(new Callback() {
             @Override
             public void done() {
-                for (int i = 0; i < streetcars.length(); i++) {
-                    createMarker(streetcars.get(i));
-                }
+            for (int i = 0; i < streetcars.length(); i++) {
+                createMarker(streetcars.get(i));
+            }
 
-                new Timer().scheduleAtFixedRate(new TimerTask(){
-                    @Override
-                    public void run(){
-                        updateStreetcars();
-                    }
-                }, 0, 2000);
+            startTimers();
             }
         });
+    }
+
+    private void startTimers() {
+        scTimer.scheduleAtFixedRate(new TimerTask(){
+            @Override
+            public void run(){
+                updateStreetcars();
+            }
+        }, 0, 2000);
     }
 
     private void getStreetcars(final Callback cb) {
@@ -189,6 +210,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             mMap.addMarker(new MarkerOptions()
 //                .icon(BitmapDescriptorFactory.fromResource(R.drawable.stop_icon))
                 .icon(BitmapDescriptorFactory.fromBitmap(resizeMapIcons("stop_icon",50,50)))
+                .anchor(0.5f, 0.5f)
                 .position(location));
         }
     }
