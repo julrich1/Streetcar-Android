@@ -1,4 +1,4 @@
 <resources>
-    <string name="app_name">Web Requests</string>
-    <string name="title_activity_maps">Map</string>
+    <string name="app_name">Seattle Streetcar Tracker</string>
+    <string name="title_activity_maps">Streetcar Map</string>
 </resources>
