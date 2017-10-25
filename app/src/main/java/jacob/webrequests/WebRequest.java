@@ -39,7 +39,7 @@ public class WebRequest {
         queue.add(stringRequest);
     }
 
-    public void streetcarJsonRequest(RequestQueue queue, final String url, final OnTaskCompleted callback) {
+    public void streetcarJsonRequest(RequestQueue queue, final String url, final FetchStreetcars callback) {
         JsonArrayRequest jsArrayRequest = new JsonArrayRequest
             (Request.Method.GET, url, null, new Response.Listener<JSONArray>() {
 

@@ -7,6 +7,6 @@ import org.json.JSONObject;
  * Created by jacob on 10/24/17.
  */
 
-public interface OnTaskCompleted {
+public interface FetchStreetcars {
     void onTaskCompleted(JSONArray response);
 }

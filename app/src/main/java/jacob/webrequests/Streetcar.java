@@ -8,6 +8,7 @@ import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonArrayRequest;
 import com.android.volley.toolbox.StringRequest;
+import com.google.android.gms.maps.model.Marker;
 
 import org.json.JSONArray;
 
@@ -24,4 +25,5 @@ public class Streetcar {
     public int speedkmhr;
     public boolean predictable;
     public String created_at;
+    public Marker marker;
 }

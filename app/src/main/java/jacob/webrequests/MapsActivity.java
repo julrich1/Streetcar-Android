@@ -1,5 +1,8 @@
 package jacob.webrequests;
 
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.os.CountDownTimer;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 
@@ -14,7 +17,9 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
@@ -29,6 +34,9 @@ import org.json.JSONObject;
 
 import java.lang.reflect.Array;
 import java.util.ArrayList;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.concurrent.CountDownLatch;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
 
@@ -63,18 +71,33 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
 
-        // Add a marker in Sydney and move the camera
-        LatLng sydney = new LatLng(47.609809, -122.320826);
-        mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney));
         getStops();
-        getStreetcars();
+        initializeStreetcars();
     }
 
-    private void getStreetcars() {
+    private void initializeStreetcars() {
+        getStreetcars(new Callback() {
+            @Override
+            public void done() {
+                for (int i = 0; i < streetcars.length(); i++) {
+                    createMarker(streetcars.get(i));
+                }
+
+                new Timer().scheduleAtFixedRate(new TimerTask(){
+                    @Override
+                    public void run(){
+                        updateStreetcars();
+                    }
+                }, 0, 2000);
+            }
+        });
+    }
+
+    private void getStreetcars(final Callback cb) {
         String url ="http://10.5.81.184:3002/api/streetcars/1";
 
         WebRequest wr = new WebRequest();
-        wr.streetcarJsonRequest(queue, url, new OnTaskCompleted() {
+        wr.streetcarJsonRequest(queue, url, new FetchStreetcars() {
             @Override
             public void onTaskCompleted(JSONArray response) {
                 Gson gson = new Gson();
@@ -88,7 +111,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                         Log.v("Error", "Error getting JSON Object");
                     }
                 }
-                updateStreetcars();
+//                updateStreetcars();
+                cb.done();
             }
         });
     }
@@ -137,24 +161,69 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         });
     }
 
-    public void updateStreetcars() {
-        for(int i = 0; i < streetcars.length(); i++) {
-            LatLng location = new LatLng(streetcars.get(i).x, streetcars.get(i).y);
-            mMap.addMarker(new MarkerOptions().position(location));
-        }
+    private MarkerOptions setMarkerOptions(Streetcar streetcar) {
+        LatLng location = new LatLng(streetcar.x, streetcar.y);
+
+        return new MarkerOptions()
+            .position(location)
+            .icon(BitmapDescriptorFactory.fromBitmap(resizeMapIcons("streetcar",150,150)))
+            .anchor(0.5f, 0.5f)
+            .rotation(streetcar.heading)
+            .title("Info window")
+            .zIndex(1.0f);
     }
 
-    public void drawStops(ArrayList<Stop> stops) {
+    private void createMarker(Streetcar streetcar) {
+        streetcar.marker = mMap.addMarker(setMarkerOptions(streetcar));
+        Log.v("Create marker:", "marker is: " + streetcar.marker.toString());
+//            marker.setTag(streetcars.get(i).streetcar_id);
+    }
+
+    public void updateStreetcars() {
+        getStreetcars(new Callback() {
+            @Override
+            public void done() {
+                Streetcar streetcar;
+
+                for(int i = 0; i < streetcars.length(); i++) {
+                    Log.v("updating: ", "Streetcar:" + i);
+                    streetcar = streetcars.get(i);
+                    if (streetcar.marker == null) {
+                        Log.v("Error: ", "Marker not found!");
+                    }
+                    else {
+                        streetcar.marker.setRotation(streetcar.heading);
+                        streetcar.marker.setSnippet("Updated!" + "Location: " + streetcar.x + " " + streetcar.y);
+                        LatLngInterpolator latLngInterpolator = new LatLngInterpolator.Spherical();
+                        MarkerAnimation.animateMarkerToICS(streetcar.marker, new LatLng(streetcar.x, streetcar.y), latLngInterpolator);
+//                        streetcar.marker.setPosition(new LatLng(streetcar.x, streetcar.y));
+                    }
+                }
+            }
+        });
+    }
+
+    private void drawStops(ArrayList<Stop> stops) {
         for (int i = 0; i < stops.size(); i++) {
             LatLng location = new LatLng(stops.get(i).lat, stops.get(i).lon);
-            mMap.addMarker(new MarkerOptions().position(location));
+            mMap.addMarker(new MarkerOptions()
+//                .icon(BitmapDescriptorFactory.fromResource(R.drawable.stop_icon))
+                .icon(BitmapDescriptorFactory.fromBitmap(resizeMapIcons("stop_icon",50,50)))
+                .position(location));
         }
     }
 
-    public void drawRouteLines(ArrayList<LatLng> points) {
+    private void drawRouteLines(ArrayList<LatLng> points) {
         mMap.addPolyline(new PolylineOptions()
             .addAll(points)
-            .width(5)
-            .color(Color.RED));
+            .width(10)
+            .color(0xB3000000));
     }
+
+    private Bitmap resizeMapIcons(String iconName, int width, int height){
+        Bitmap imageBitmap = BitmapFactory.decodeResource(getResources(),getResources().getIdentifier(iconName, "drawable", getPackageName()));
+        Bitmap resizedBitmap = Bitmap.createScaledBitmap(imageBitmap, width, height, false);
+        return resizedBitmap;
+    }
+
 }
