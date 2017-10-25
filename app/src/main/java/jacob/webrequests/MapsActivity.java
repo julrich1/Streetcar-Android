@@ -167,9 +167,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         return new MarkerOptions()
             .position(location)
             .icon(BitmapDescriptorFactory.fromBitmap(resizeMapIcons("streetcar",150,150)))
-            .anchor(0.5f, 0.5f)
+            .title("Info")
+//            .anchor(0.5f, 0.5f)
             .rotation(streetcar.heading)
-            .title("Info window")
             .zIndex(1.0f);
     }
 
@@ -193,7 +193,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     }
                     else {
                         streetcar.marker.setRotation(streetcar.heading);
-                        streetcar.marker.setSnippet("Updated!" + "Location: " + streetcar.x + " " + streetcar.y);
+                        streetcar.marker.setSnippet("Location: " + streetcar.x + " " + streetcar.y + "Last Speed " + convertKmHrToMph(streetcar.speedkmhr));
                         LatLngInterpolator latLngInterpolator = new LatLngInterpolator.Spherical();
                         MarkerAnimation.animateMarkerToICS(streetcar.marker, new LatLng(streetcar.x, streetcar.y), latLngInterpolator);
 //                        streetcar.marker.setPosition(new LatLng(streetcar.x, streetcar.y));
@@ -225,5 +225,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         Bitmap resizedBitmap = Bitmap.createScaledBitmap(imageBitmap, width, height, false);
         return resizedBitmap;
     }
+
+    private String convertKmHrToMph(int speed) {
+        return Math.round(speed * 0.62137119223733) + " Mph";
+//        return speed == undefined ? "N/A" : Math.round(speed * 0.62137119223733) + " Mph";
+    }
+
 
 }
