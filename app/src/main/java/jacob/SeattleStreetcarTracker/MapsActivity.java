@@ -31,7 +31,7 @@ import java.util.ArrayList;
 import java.util.Timer;
 import java.util.TimerTask;
 
-public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
+public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, GoogleMap.OnMapClickListener, GoogleMap.OnMarkerClickListener {
 
     String API_URL = "http://sc-dev.shadowline.net";
 
@@ -72,34 +72,30 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     @Override
+    public void onMapClick(LatLng latLng) {
+        SlidingUpPanelLayout panel = (SlidingUpPanelLayout) findViewById(R.id.sliding_layout);
+        panel.setPanelState(SlidingUpPanelLayout.PanelState.HIDDEN);
+    }
+
+    @Override
+    public boolean onMarkerClick(final Marker marker) {
+        Log.v("Click event", "Triggered");
+
+        if (marker.getTag() != null) {
+            Log.v("Marker tag is :", marker.getTag().toString());
+            getArrivalTime((int) marker.getTag());
+            SlidingUpPanelLayout panel = (SlidingUpPanelLayout) findViewById(R.id.sliding_layout);
+            panel.setPanelState(SlidingUpPanelLayout.PanelState.EXPANDED);
+        }
+        return false;
+    }
+
+    @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
 
-        mMap.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
-            @Override
-            public boolean onMarkerClick(final Marker marker) {
-                Log.v("Click event", "Triggered");
-
-                if (marker.getTag() != null) {
-                    Log.v("Marker tag is :", marker.getTag().toString());
-                    getArrivalTime((int) marker.getTag());
-                }
-                return false;
-            }
-        });
-
-        mMap.setOnMapClickListener(new GoogleMap.OnMapClickListener() {
-            @Override
-            public void onMapClick(LatLng latLng) {
-
-                SlidingUpPanelLayout panel = (SlidingUpPanelLayout) findViewById(R.id.sliding_layout);
-                Log.v("Panel state : ", panel.getPanelState().toString());
-                Log.v("Shadow state : ", "" + panel.getShadowHeight());
-                panel.setShadowHeight(0);
-                panel.setPanelState(SlidingUpPanelLayout.PanelState.COLLAPSED);
-            }
-        });
-
+        mMap.setOnMarkerClickListener(this);
+        mMap.setOnMapClickListener(this);
 
         getStops();
         initializeStreetcars();
