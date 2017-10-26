@@ -14,6 +14,8 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.ArrayList;
+
 /**
  * Created by jacob on 10/24/17.
  */
@@ -68,4 +70,42 @@ public class WebRequest {
                 });
         queue.add(jsObjectRequest);
     }
+
+    public void getArrivalTimes(RequestQueue queue, final String url, final FetchArrivalTimes callback) {
+        JsonObjectRequest jsonObjectRequest = new JsonObjectRequest
+                (Request.Method.GET, url, null, new Response.Listener<JSONObject>() {
+
+                    @Override
+                    public void onResponse(JSONObject response) {
+                        ArrayList arrivalTimes = new ArrayList();
+
+                        Log.v("Response", response.toString());
+                        try {
+                            String stopName = response.getJSONObject("predictions").optString("stopTitle");
+                            arrivalTimes.add(stopName);
+
+                            JSONArray predictionsArray = response.getJSONObject("predictions").getJSONObject("direction").getJSONArray("prediction");
+
+                            for (int i = 0; i < predictionsArray.length(); i++) {
+                                int arrivalTime = predictionsArray.getJSONObject(i).optInt("minutes");
+                                arrivalTimes.add(arrivalTime);
+                            }
+
+                            callback.onTaskCompleted(arrivalTimes);
+                        }
+                        catch (JSONException error) {
+                            Log.v("Error", "There was an error parsing JSON " + error.toString());
+                        }
+                    }
+                }, new Response.ErrorListener() {
+
+                    @Override
+                    public void onErrorResponse(VolleyError error) {
+                        Log.v("Error", "Error fetching " + url + error.toString());
+
+                    }
+                });
+        queue.add(jsonObjectRequest);
+    }
+
 }

@@ -12,11 +12,16 @@ import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.gson.Gson;
 
 import android.util.Log;
+import android.widget.LinearLayout;
+import android.widget.TextView;
+
+import com.sothree.slidinguppanel.SlidingUpPanelLayout;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -39,7 +44,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.main_layout);
+        setContentView(R.layout.main_layout_new);
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
@@ -60,6 +65,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     protected void onResume() {
         super.onResume();
 
+        Log.v("Event resume", "onResume() was called");
+
         scTimer = new Timer();
         startTimers();
     }
@@ -67,6 +74,32 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
+
+        mMap.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
+            @Override
+            public boolean onMarkerClick(final Marker marker) {
+                Log.v("Click event", "Triggered");
+
+                if (marker.getTag() != null) {
+                    Log.v("Marker tag is :", marker.getTag().toString());
+                    getArrivalTime((int) marker.getTag());
+                }
+                return false;
+            }
+        });
+
+        mMap.setOnMapClickListener(new GoogleMap.OnMapClickListener() {
+            @Override
+            public void onMapClick(LatLng latLng) {
+
+                SlidingUpPanelLayout panel = (SlidingUpPanelLayout) findViewById(R.id.sliding_layout);
+                Log.v("Panel state : ", panel.getPanelState().toString());
+                Log.v("Shadow state : ", "" + panel.getShadowHeight());
+                panel.setShadowHeight(0);
+                panel.setPanelState(SlidingUpPanelLayout.PanelState.COLLAPSED);
+            }
+        });
+
 
         getStops();
         initializeStreetcars();
@@ -76,19 +109,19 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         getStreetcars(new Callback() {
             @Override
             public void done() {
-            for (int i = 0; i < streetcars.length(); i++) {
-                createMarker(streetcars.get(i));
-            }
-
-            startTimers();
+                for (int i = 0; i < streetcars.length(); i++) {
+                    createMarker(streetcars.get(i));
+                }
             }
         });
     }
 
     private void startTimers() {
+        Log.v("Event startTimers", "startTimers() was called");
+
         scTimer.scheduleAtFixedRate(new TimerTask(){
             @Override
-            public void run(){
+            public void run() {
                 updateStreetcars();
             }
         }, 0, 2000);
@@ -207,11 +240,13 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private void drawStops(ArrayList<Stop> stops) {
         for (int i = 0; i < stops.size(); i++) {
             LatLng location = new LatLng(stops.get(i).lat, stops.get(i).lon);
-            mMap.addMarker(new MarkerOptions()
+            Marker marker = mMap.addMarker(new MarkerOptions()
 //                .icon(BitmapDescriptorFactory.fromResource(R.drawable.stop_icon))
                 .icon(BitmapDescriptorFactory.fromBitmap(resizeMapIcons("stop_icon",50,50)))
                 .anchor(0.5f, 0.5f)
                 .position(location));
+
+            marker.setTag(stops.get(i).stopId);
         }
     }
 
@@ -232,5 +267,82 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         return Math.round(speed * 0.62137119223733) + " Mph";
     }
 
+    private void getArrivalTime(int stopId) {
+        String url = "http://webservices.nextbus.com/service/publicJSONFeed?command=predictions&a=seattle-sc&r=" + "FHS" + "&s=" + stopId;
+
+        WebRequest wr = new WebRequest();
+        wr.getArrivalTimes(queue, url, new FetchArrivalTimes() {
+            @Override
+            public void onTaskCompleted(ArrayList response) {
+                Log.v("Response from arrival", response.toString());
+
+//                ArrayList arrivalTimes = new ArrayList<>();
+
+//                for (int i = 0; i < response.length(); i++) {
+//                    try {
+//                        int arrivalTime = response.getJSONObject(i).optInt("minutes");
+//
+//                        arrivalTimes.add(arrivalTime);
+//                    }
+//                    catch (JSONException error) {
+//                        Log.v("Error", "There was an error parsing JSON " + error.toString());
+//                    }
+//                }
+
+                createArrivalText(response);
+
+            }
+        });
+
+//        let contentString = "";
+//
+//        contentString += `<div class="stop-header"><h3>${stop.title}</h3>`;
+//        contentString = addFavoriteButton(contentString, stop);
+//        contentString += "<h4>Arrivals:</h4>";
+//        contentString += "<ol class=\"arrival-info\">";
+//
+//        for (const arrivalTime of data.predictions.direction.prediction) {
+//            contentString += `<li>${arrivalTime.minutes} mins</li>`;
+//        }
+//
+//        contentString += "</ul>";
+//
+//        stop.infoWindow.setContent(contentString, stop);
+//
+//        addFavoriteListener(stop);
+    }
+
+    private void createArrivalText(final ArrayList arrivalTimes) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                LinearLayout.LayoutParams lparams = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+                LinearLayout linearLayout = (LinearLayout) findViewById(R.id.ll_slide_ui);
+
+                linearLayout.removeAllViews();
+
+                TextView tv = new TextView(getApplicationContext());
+                tv.setLayoutParams(lparams);
+                tv.setTextAppearance(R.style.TextAppearance_AppCompat_Large);
+                tv.setText(arrivalTimes.get(0).toString());
+                linearLayout.addView(tv);
+
+                tv = new TextView(getApplicationContext());
+                tv.setLayoutParams(lparams);
+                tv.setTextAppearance(R.style.TextAppearance_AppCompat_Medium);
+                tv.setText("Arrivals:");
+                linearLayout.addView(tv);
+
+
+                for (int i = 1; i < arrivalTimes.size(); i++) {
+                    tv = new TextView(getApplicationContext());
+                    tv.setLayoutParams(lparams);
+                    tv.setTextAppearance(R.style.TextAppearance_AppCompat_Large);
+                    tv.setText(arrivalTimes.get(i) + " minutes");
+                    linearLayout.addView(tv);
+                }
+            }
+        });
+    }
 
 }
