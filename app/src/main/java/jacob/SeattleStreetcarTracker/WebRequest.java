@@ -27,7 +27,7 @@ public class WebRequest {
 
                 @Override
                 public void onResponse(JSONArray response) {
-                    Log.v("Response", response.toString());
+//                    Log.v("Response", response.toString());
                     callback.onTaskCompleted(response);
                 }
             }, new Response.ErrorListener() {

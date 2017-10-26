@@ -23,17 +23,27 @@ import android.widget.TextView;
 
 import com.sothree.slidinguppanel.SlidingUpPanelLayout;
 
+import net.danlew.android.joda.JodaTimeAndroid;
+
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.time.Clock;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.Timer;
 import java.util.TimerTask;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, GoogleMap.OnMapClickListener, GoogleMap.OnMarkerClickListener {
 
     String API_URL = "http://sc-dev.shadowline.net";
+    int MARKER_LIFE = 5;
 
     private GoogleMap mMap;
     public Streetcars streetcars = new Streetcars();
@@ -51,6 +61,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mapFragment.getMapAsync(this);
 
         queue = Volley.newRequestQueue(this);
+        JodaTimeAndroid.init(this);
     }
 
     @Override
@@ -85,7 +96,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             Log.v("Marker tag is :", marker.getTag().toString());
             getArrivalTime((int) marker.getTag());
             SlidingUpPanelLayout panel = (SlidingUpPanelLayout) findViewById(R.id.sliding_layout);
-            panel.setPanelState(SlidingUpPanelLayout.PanelState.EXPANDED);
+            panel.setPanelState(SlidingUpPanelLayout.PanelState.COLLAPSED);
         }
         return false;
     }
@@ -97,20 +108,24 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mMap.setOnMarkerClickListener(this);
         mMap.setOnMapClickListener(this);
 
+        SlidingUpPanelLayout panel = (SlidingUpPanelLayout) findViewById(R.id.sliding_layout);
+        panel.setTouchEnabled(false);
+
+
         getStops();
-        initializeStreetcars();
+//        initializeStreetcars();
     }
 
-    private void initializeStreetcars() {
-        getStreetcars(new Callback() {
-            @Override
-            public void done() {
-                for (int i = 0; i < streetcars.length(); i++) {
-                    createMarker(streetcars.get(i));
-                }
-            }
-        });
-    }
+//    private void initializeStreetcars() {
+//        getStreetcars(new Callback() {
+//            @Override
+//            public void done() {
+//                for (int i = 0; i < streetcars.length(); i++) {
+//                    createMarker(streetcars.get(i));
+//                }
+//            }
+//        });
+//    }
 
     private void startTimers() {
         Log.v("Event startTimers", "startTimers() was called");
@@ -141,7 +156,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                         Log.v("Error", "Error getting JSON Object");
                     }
                 }
-//                updateStreetcars();
+
                 cb.done();
             }
         });
@@ -216,21 +231,39 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 Streetcar streetcar;
 
                 for(int i = 0; i < streetcars.length(); i++) {
-                    Log.v("updating: ", "Streetcar:" + i);
+//                    Log.v("updating: ", "Streetcar:" + i);
                     streetcar = streetcars.get(i);
+
                     if (streetcar.marker == null) {
-                        Log.v("Error: ", "Marker not found!");
+                        Log.v("Error: ", "Marker not found! Creating one.");
+                        createMarker(streetcar);
                     }
-                    else {
-                        streetcar.marker.setRotation(streetcar.heading);
-                        streetcar.marker.setSnippet("Location: " + streetcar.x + " " + streetcar.y + "Last Speed " + convertKmHrToMph(streetcar.speedkmhr));
-                        LatLngInterpolator latLngInterpolator = new LatLngInterpolator.Spherical();
-                        MarkerAnimation.animateMarkerToICS(streetcar.marker, new LatLng(streetcar.x, streetcar.y), latLngInterpolator);
-//                        streetcar.marker.setPosition(new LatLng(streetcar.x, streetcar.y));
-                    }
+
+                    streetcar.marker.setRotation(streetcar.heading);
+                    streetcar.marker.setSnippet("Location: " + streetcar.x + " " + streetcar.y + "Last Speed " + convertKmHrToMph(streetcar.speedkmhr));
+                    LatLngInterpolator latLngInterpolator = new LatLngInterpolator.Spherical();
+                    MarkerAnimation.animateMarkerToICS(streetcar.marker, new LatLng(streetcar.x, streetcar.y), latLngInterpolator);
                 }
+
+                checkForOldStreetcars();
             }
         });
+    }
+
+    private void checkForOldStreetcars() {
+        DateTime currentTime = new DateTime(DateTimeZone.forID("America/Los_Angeles"));
+
+        for (int i = 0; i < streetcars.length(); i++) {
+            DateTime lastUpdated = new DateTime(streetcars.get(i).updated_at);
+
+            Log.v("Comparison", currentTime.toString() + " " + lastUpdated.toString() + " " + lastUpdated.isBefore(currentTime.minusMinutes(5)));
+
+            if (lastUpdated.isBefore(currentTime.minusMinutes(5))) {
+                Log.v("Outdated streetcar!", "Deleting this thing - " + i);
+                streetcars.get(i).marker.remove();
+                streetcars.delete(i);
+            }
+        }
     }
 
     private void drawStops(ArrayList<Stop> stops) {
@@ -323,20 +356,20 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 tv.setText(arrivalTimes.get(0).toString());
                 linearLayout.addView(tv);
 
-                tv = new TextView(getApplicationContext());
-                tv.setLayoutParams(lparams);
-                tv.setTextAppearance(R.style.TextAppearance_AppCompat_Medium);
-                tv.setText("Arrivals:");
-                linearLayout.addView(tv);
-
+                String arrivalStr = "Arriving in ";
 
                 for (int i = 1; i < arrivalTimes.size(); i++) {
-                    tv = new TextView(getApplicationContext());
-                    tv.setLayoutParams(lparams);
-                    tv.setTextAppearance(R.style.TextAppearance_AppCompat_Large);
-                    tv.setText(arrivalTimes.get(i) + " minutes");
-                    linearLayout.addView(tv);
+                    arrivalStr += arrivalTimes.get(i) + ", ";
                 }
+
+                arrivalStr = arrivalStr.substring(0, arrivalStr.length() - 2) + " minutes";
+
+                tv = new TextView(getApplicationContext());
+                tv.setLayoutParams(lparams);
+                tv.setTextAppearance(R.style.TextAppearance_AppCompat_Large);
+                tv.setText(arrivalStr);
+                linearLayout.addView(tv);
+
             }
         });
     }

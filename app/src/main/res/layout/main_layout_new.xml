@@ -12,7 +12,7 @@
     sothree:umanoShadowHeight="0dp"
     sothree:umanoFadeColor="@android:color/transparent"
     sothree:umanoInitialState="hidden"
-    sothree:umanoOverlay="false"
+    sothree:umanoOverlay="true"
     >
 
     <LinearLayout

@@ -31,4 +31,5 @@ dependencies {
     testCompile 'junit:junit:4.12'
     compile 'com.android.support.constraint:constraint-layout:1.0.2'
     compile 'com.sothree.slidinguppanel:library:3.3.1'
+    compile 'net.danlew:android.joda:2.9.9'
 }

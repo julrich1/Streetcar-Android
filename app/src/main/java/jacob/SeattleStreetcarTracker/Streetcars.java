@@ -38,6 +38,10 @@ public class Streetcars {
         return -1;
     }
 
+    public void delete(int index) {
+        streetcars.remove(index);
+    }
+
     public Streetcar get(int i) {
         return streetcars.get(i);
     }
