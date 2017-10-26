@@ -31,19 +31,14 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.sql.Time;
-import java.sql.Timestamp;
-import java.time.Clock;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.Timer;
 import java.util.TimerTask;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, GoogleMap.OnMapClickListener, GoogleMap.OnMarkerClickListener {
 
     String API_URL = "http://sc-dev.shadowline.net";
-    int MARKER_LIFE = 5;
+    int STREETCAR_MARKER_LIFE = 5;
 
     private GoogleMap mMap;
     public Streetcars streetcars = new Streetcars();
@@ -90,12 +85,49 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     @Override
     public boolean onMarkerClick(final Marker marker) {
-        Log.v("Click event", "Triggered");
-
         if (marker.getTag() != null) {
-            Log.v("Marker tag is :", marker.getTag().toString());
-            getArrivalTime((int) marker.getTag());
+            String tag = marker.getTag().toString();
+
+            int id = Integer.parseInt(tag.substring(tag.indexOf(" ") + 1));
+            String type = tag.substring(0, tag.indexOf(" "));
+
+            Log.v("Click vars", type + id);
+
+            switch(type) {
+                case "stop":
+                    getArrivalTime(id);
+                    break;
+                case "streetcar":
+                    createStreetcarText(streetcars.get(streetcars.findByStreetcarId(id)));
+                    break;
+            }
+
             SlidingUpPanelLayout panel = (SlidingUpPanelLayout) findViewById(R.id.sliding_layout);
+            LinearLayout linearLayout = (LinearLayout) findViewById(R.id.ll_slide_ui);
+
+
+            // TO-DO: Clean all this up to programatically set slider height.
+//            float sp = 7;
+//            float px = sp * getResources().getDisplayMetrics().scaledDensity;
+
+
+            float dp = 7;
+            float px = dp * getResources().getDisplayMetrics().density;
+
+            px = px * 3;
+
+            Log.v("Current height is ", ""+linearLayout.getMeasuredHeight());
+            Log.v("Current height is ", ""+linearLayout.getHeight());
+
+            if (linearLayout.getChildCount() > 0) {
+                Log.v("Child height is ", "" + linearLayout.getChildAt(0).getHeight());
+            }
+
+
+            Log.v("PX value is ", px + "");
+
+            panel.setPanelHeight(303 + (int)px);
+
             panel.setPanelState(SlidingUpPanelLayout.PanelState.COLLAPSED);
         }
         return false;
@@ -113,19 +145,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
 
         getStops();
-//        initializeStreetcars();
     }
-
-//    private void initializeStreetcars() {
-//        getStreetcars(new Callback() {
-//            @Override
-//            public void done() {
-//                for (int i = 0; i < streetcars.length(); i++) {
-//                    createMarker(streetcars.get(i));
-//                }
-//            }
-//        });
-//    }
 
     private void startTimers() {
         Log.v("Event startTimers", "startTimers() was called");
@@ -220,6 +240,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     private void createMarker(Streetcar streetcar) {
         streetcar.marker = mMap.addMarker(setMarkerOptions(streetcar));
+        streetcar.marker.setTag("streetcar " + streetcar.streetcar_id);
+
         Log.v("Create marker:", "marker is: " + streetcar.marker.toString());
 //            marker.setTag(streetcars.get(i).streetcar_id);
     }
@@ -256,9 +278,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         for (int i = 0; i < streetcars.length(); i++) {
             DateTime lastUpdated = new DateTime(streetcars.get(i).updated_at);
 
-            Log.v("Comparison", currentTime.toString() + " " + lastUpdated.toString() + " " + lastUpdated.isBefore(currentTime.minusMinutes(5)));
+//            Log.v("Comparison", currentTime.toString() + " " + lastUpdated.toString() + " " + lastUpdated.isBefore(currentTime.minusMinutes(5)));
 
-            if (lastUpdated.isBefore(currentTime.minusMinutes(5))) {
+            if (lastUpdated.isBefore(currentTime.minusMinutes(STREETCAR_MARKER_LIFE))) {
                 Log.v("Outdated streetcar!", "Deleting this thing - " + i);
                 streetcars.get(i).marker.remove();
                 streetcars.delete(i);
@@ -270,12 +292,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         for (int i = 0; i < stops.size(); i++) {
             LatLng location = new LatLng(stops.get(i).lat, stops.get(i).lon);
             Marker marker = mMap.addMarker(new MarkerOptions()
-//                .icon(BitmapDescriptorFactory.fromResource(R.drawable.stop_icon))
                 .icon(BitmapDescriptorFactory.fromBitmap(resizeMapIcons("stop_icon",50,50)))
                 .anchor(0.5f, 0.5f)
                 .position(location));
 
-            marker.setTag(stops.get(i).stopId);
+            marker.setTag("stop " + stops.get(i).stopId);
         }
     }
 
@@ -305,40 +326,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             public void onTaskCompleted(ArrayList response) {
                 Log.v("Response from arrival", response.toString());
 
-//                ArrayList arrivalTimes = new ArrayList<>();
-
-//                for (int i = 0; i < response.length(); i++) {
-//                    try {
-//                        int arrivalTime = response.getJSONObject(i).optInt("minutes");
-//
-//                        arrivalTimes.add(arrivalTime);
-//                    }
-//                    catch (JSONException error) {
-//                        Log.v("Error", "There was an error parsing JSON " + error.toString());
-//                    }
-//                }
-
                 createArrivalText(response);
-
             }
         });
-
-//        let contentString = "";
-//
-//        contentString += `<div class="stop-header"><h3>${stop.title}</h3>`;
-//        contentString = addFavoriteButton(contentString, stop);
-//        contentString += "<h4>Arrivals:</h4>";
-//        contentString += "<ol class=\"arrival-info\">";
-//
-//        for (const arrivalTime of data.predictions.direction.prediction) {
-//            contentString += `<li>${arrivalTime.minutes} mins</li>`;
-//        }
-//
-//        contentString += "</ul>";
-//
-//        stop.infoWindow.setContent(contentString, stop);
-//
-//        addFavoriteListener(stop);
     }
 
     private void createArrivalText(final ArrayList arrivalTimes) {
@@ -370,6 +360,36 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 tv.setText(arrivalStr);
                 linearLayout.addView(tv);
 
+            }
+        });
+    }
+
+    private void createStreetcarText(final Streetcar streetcar) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                LinearLayout.LayoutParams lparams = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+                LinearLayout linearLayout = (LinearLayout) findViewById(R.id.ll_slide_ui);
+
+                linearLayout.removeAllViews();
+
+                TextView tv = new TextView(getApplicationContext());
+                tv.setLayoutParams(lparams);
+                tv.setTextAppearance(R.style.TextAppearance_AppCompat_Large);
+                tv.setText("Last updated: " + streetcar.updated_at);
+                linearLayout.addView(tv);
+
+                tv = new TextView(getApplicationContext());
+                tv.setLayoutParams(lparams);
+                tv.setTextAppearance(R.style.TextAppearance_AppCompat_Large);
+                tv.setText("Last speed: " + convertKmHrToMph(streetcar.speedkmhr));
+                linearLayout.addView(tv);
+
+                tv = new TextView(getApplicationContext());
+                tv.setLayoutParams(lparams);
+                tv.setTextAppearance(R.style.TextAppearance_AppCompat_Large);
+                tv.setText("Location: " + streetcar.x + " " + streetcar.y);
+                linearLayout.addView(tv);
             }
         });
     }
