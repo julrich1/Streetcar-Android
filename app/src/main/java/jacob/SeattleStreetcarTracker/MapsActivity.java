@@ -18,10 +18,9 @@ import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.gson.Gson;
 
 import android.util.Log;
+import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-
-import com.sothree.slidinguppanel.SlidingUpPanelLayout;
 
 import net.danlew.android.joda.JodaTimeAndroid;
 
@@ -38,7 +37,6 @@ import java.util.TimerTask;
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, GoogleMap.OnMapClickListener, GoogleMap.OnMarkerClickListener {
 
     String API_URL = "http://sc-dev.shadowline.net";
-    int STREETCAR_MARKER_LIFE = 5;
 
     private GoogleMap mMap;
     public Streetcars streetcars = new Streetcars();
@@ -49,7 +47,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.main_layout_new);
+        setContentView(R.layout.main_layout_newest);
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
@@ -57,6 +55,14 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         queue = Volley.newRequestQueue(this);
         JodaTimeAndroid.init(this);
+
+        LinearLayout bottomPanel = (LinearLayout) findViewById(R.id.bottom_panel);
+        bottomPanel.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Log.v("Clicked", "Click was called on bottom panel");
+            }
+        });
     }
 
     @Override
@@ -79,8 +85,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     @Override
     public void onMapClick(LatLng latLng) {
-        SlidingUpPanelLayout panel = (SlidingUpPanelLayout) findViewById(R.id.sliding_layout);
-        panel.setPanelState(SlidingUpPanelLayout.PanelState.HIDDEN);
+        LinearLayout bottomPanel = (LinearLayout) findViewById(R.id.bottom_panel);
+        bottomPanel.removeAllViews();
     }
 
     @Override
@@ -101,34 +107,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     createStreetcarText(streetcars.get(streetcars.findByStreetcarId(id)));
                     break;
             }
-
-            SlidingUpPanelLayout panel = (SlidingUpPanelLayout) findViewById(R.id.sliding_layout);
-            LinearLayout linearLayout = (LinearLayout) findViewById(R.id.ll_slide_ui);
-
-
-            // TO-DO: Clean all this up to programatically set slider height.
-//            float sp = 7;
-//            float px = sp * getResources().getDisplayMetrics().scaledDensity;
-
-
-            float dp = 7;
-            float px = dp * getResources().getDisplayMetrics().density;
-
-            px = px * 3;
-
-            Log.v("Current height is ", ""+linearLayout.getMeasuredHeight());
-            Log.v("Current height is ", ""+linearLayout.getHeight());
-
-            if (linearLayout.getChildCount() > 0) {
-                Log.v("Child height is ", "" + linearLayout.getChildAt(0).getHeight());
-            }
-
-
-            Log.v("PX value is ", px + "");
-
-            panel.setPanelHeight(303 + (int)px);
-
-            panel.setPanelState(SlidingUpPanelLayout.PanelState.COLLAPSED);
         }
         return false;
     }
@@ -139,10 +117,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         mMap.setOnMarkerClickListener(this);
         mMap.setOnMapClickListener(this);
-
-        SlidingUpPanelLayout panel = (SlidingUpPanelLayout) findViewById(R.id.sliding_layout);
-        panel.setTouchEnabled(false);
-
 
         getStops();
     }
@@ -243,7 +217,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         streetcar.marker.setTag("streetcar " + streetcar.streetcar_id);
 
         Log.v("Create marker:", "marker is: " + streetcar.marker.toString());
-//            marker.setTag(streetcars.get(i).streetcar_id);
     }
 
     public void updateStreetcars() {
@@ -253,7 +226,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 Streetcar streetcar;
 
                 for(int i = 0; i < streetcars.length(); i++) {
-//                    Log.v("updating: ", "Streetcar:" + i);
                     streetcar = streetcars.get(i);
 
                     if (streetcar.marker == null) {
@@ -267,25 +239,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     MarkerAnimation.animateMarkerToICS(streetcar.marker, new LatLng(streetcar.x, streetcar.y), latLngInterpolator);
                 }
 
-                checkForOldStreetcars();
+                streetcars.checkForOldStreetcars();
             }
         });
-    }
-
-    private void checkForOldStreetcars() {
-        DateTime currentTime = new DateTime(DateTimeZone.forID("America/Los_Angeles"));
-
-        for (int i = 0; i < streetcars.length(); i++) {
-            DateTime lastUpdated = new DateTime(streetcars.get(i).updated_at);
-
-//            Log.v("Comparison", currentTime.toString() + " " + lastUpdated.toString() + " " + lastUpdated.isBefore(currentTime.minusMinutes(5)));
-
-            if (lastUpdated.isBefore(currentTime.minusMinutes(STREETCAR_MARKER_LIFE))) {
-                Log.v("Outdated streetcar!", "Deleting this thing - " + i);
-                streetcars.get(i).marker.remove();
-                streetcars.delete(i);
-            }
-        }
     }
 
     private void drawStops(ArrayList<Stop> stops) {
@@ -336,15 +292,17 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             @Override
             public void run() {
                 LinearLayout.LayoutParams lparams = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-                LinearLayout linearLayout = (LinearLayout) findViewById(R.id.ll_slide_ui);
+                lparams.setMargins(15, 5, 5, 15);
 
-                linearLayout.removeAllViews();
+                LinearLayout bottomPanel = (LinearLayout) findViewById(R.id.bottom_panel);
+
+                bottomPanel.removeAllViews();
 
                 TextView tv = new TextView(getApplicationContext());
                 tv.setLayoutParams(lparams);
                 tv.setTextAppearance(R.style.TextAppearance_AppCompat_Large);
                 tv.setText(arrivalTimes.get(0).toString());
-                linearLayout.addView(tv);
+                bottomPanel.addView(tv);
 
                 String arrivalStr = "Arriving in ";
 
@@ -358,8 +316,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 tv.setLayoutParams(lparams);
                 tv.setTextAppearance(R.style.TextAppearance_AppCompat_Large);
                 tv.setText(arrivalStr);
-                linearLayout.addView(tv);
-
+                bottomPanel.addView(tv);
             }
         });
     }
@@ -369,29 +326,36 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             @Override
             public void run() {
                 LinearLayout.LayoutParams lparams = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-                LinearLayout linearLayout = (LinearLayout) findViewById(R.id.ll_slide_ui);
+                lparams.setMargins(15, 5, 5, 15);
 
-                linearLayout.removeAllViews();
+                LinearLayout bottomPanel = (LinearLayout) findViewById(R.id.bottom_panel);
 
+                bottomPanel.removeAllViews();
                 TextView tv = new TextView(getApplicationContext());
                 tv.setLayoutParams(lparams);
                 tv.setTextAppearance(R.style.TextAppearance_AppCompat_Large);
                 tv.setText("Last updated: " + streetcar.updated_at);
-                linearLayout.addView(tv);
+                Log.v("Height of textview: ", ""+tv.getHeight());
+                bottomPanel.addView(tv);
+
+                tv = new TextView(getApplicationContext());
+                tv.setLayoutParams(lparams);
+                tv.setTextAppearance(R.style.TextAppearance_AppCompat_Large);
+                tv.setText("Idle time: " + streetcar.idle);
+                bottomPanel.addView(tv);
 
                 tv = new TextView(getApplicationContext());
                 tv.setLayoutParams(lparams);
                 tv.setTextAppearance(R.style.TextAppearance_AppCompat_Large);
                 tv.setText("Last speed: " + convertKmHrToMph(streetcar.speedkmhr));
-                linearLayout.addView(tv);
+                bottomPanel.addView(tv);
 
                 tv = new TextView(getApplicationContext());
                 tv.setLayoutParams(lparams);
                 tv.setTextAppearance(R.style.TextAppearance_AppCompat_Large);
                 tv.setText("Location: " + streetcar.x + " " + streetcar.y);
-                linearLayout.addView(tv);
+                bottomPanel.addView(tv);
             }
         });
     }
-
 }

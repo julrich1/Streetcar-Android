@@ -5,11 +5,16 @@ import android.util.Log;
 
 import com.google.android.gms.maps.model.Marker;
 
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
+
 /**
  * Created by jacob on 10/24/17.
  */
 
 public class Streetcars {
+    private int STREETCAR_MARKER_LIFE = 5;
+
     public ArrayList<Streetcar> streetcars = new ArrayList<>();
 
     public void update(Streetcar streetcar) {
@@ -49,4 +54,19 @@ public class Streetcars {
     public int length() {
         return streetcars.size();
     }
+
+    public void checkForOldStreetcars() {
+        DateTime currentTime = new DateTime(DateTimeZone.forID("America/Los_Angeles"));
+
+        for (int i = 0; i < streetcars.size(); i++) {
+            DateTime lastUpdated = new DateTime(streetcars.get(i).updated_at);
+
+            if (lastUpdated.isBefore(currentTime.minusMinutes(STREETCAR_MARKER_LIFE))) {
+                Log.v("Outdated streetcar!", "Deleting this thing - " + i);
+                streetcars.get(i).marker.remove();
+                delete(i);
+            }
+        }
+    }
+
 }

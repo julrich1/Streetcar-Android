@@ -18,4 +18,5 @@ public class Streetcar {
     public boolean predictable;
     public Timestamp updated_at;
     public Marker marker;
+    public String idle;
 }
