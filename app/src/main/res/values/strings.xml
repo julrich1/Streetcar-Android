@@ -1,4 +1,6 @@
 <resources>
     <string name="app_name">Seattle Streetcar Tracker</string>
     <string name="title_activity_maps">Streetcar Map</string>
+    <string name="drawer_open">drawer open</string>
+    <string name="drawer_close">drawer close</string>
 </resources>

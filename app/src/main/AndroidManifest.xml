@@ -32,6 +32,7 @@
         <activity
             android:name="jacob.SeattleStreetcarTracker.MapsActivity"
             android:windowSoftInputMode="adjustPan"
+            android:theme="@style/AppTheme.NoActionBar"
             >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

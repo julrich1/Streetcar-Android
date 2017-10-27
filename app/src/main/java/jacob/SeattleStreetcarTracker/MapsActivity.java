@@ -1,7 +1,9 @@
 package jacob.SeattleStreetcarTracker;
 
+import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.support.annotation.Nullable;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 
@@ -17,6 +19,12 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.gson.Gson;
 
+import android.support.v4.widget.DrawerLayout;
+import android.support.v7.app.ActionBar;
+import android.support.v7.app.ActionBarDrawerToggle;
+import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.Toolbar;
+import android.util.AttributeSet;
 import android.util.Log;
 import android.view.View;
 import android.widget.LinearLayout;
@@ -34,7 +42,7 @@ import java.util.ArrayList;
 import java.util.Timer;
 import java.util.TimerTask;
 
-public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, GoogleMap.OnMapClickListener, GoogleMap.OnMarkerClickListener {
+public class MapsActivity extends AppCompatActivity implements OnMapReadyCallback, GoogleMap.OnMapClickListener, GoogleMap.OnMarkerClickListener {
 
     String API_URL = "http://sc-dev.shadowline.net";
 
@@ -42,11 +50,15 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     public Streetcars streetcars = new Streetcars();
     Timer scTimer = new Timer();
 
+    ActionBarDrawerToggle abToggle;
     RequestQueue queue;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+
+
         setContentView(R.layout.main_layout_newest);
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
@@ -56,6 +68,19 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         queue = Volley.newRequestQueue(this);
         JodaTimeAndroid.init(this);
 
+        DrawerLayout drawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
+        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+
+        abToggle = new ActionBarDrawerToggle(this, drawerLayout, toolbar, R.string.drawer_open, R.string.drawer_close);
+
+//        Log.v("Both items", drawerLayout.toString());
+        drawerLayout.addDrawerListener(abToggle);
+//        ActionBar actionBar = getSupportActionBar();
+//        getSupportActionBar().setDisplayHomeAsUpEnabled(false);
+//        getSupportActionBar().setHomeButtonEnabled(false);
+//        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.dra)
+
+
         LinearLayout bottomPanel = (LinearLayout) findViewById(R.id.bottom_panel);
         bottomPanel.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -63,6 +88,18 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 Log.v("Clicked", "Click was called on bottom panel");
             }
         });
+    }
+
+    @Override
+    public View onCreateView(String name, Context context, AttributeSet attrs) {
+
+        return super.onCreateView(name, context, attrs);
+    }
+
+    @Override
+    protected void onPostCreate(@Nullable Bundle savedInstanceState) {
+        super.onPostCreate(savedInstanceState);
+        abToggle.syncState();
     }
 
     @Override
