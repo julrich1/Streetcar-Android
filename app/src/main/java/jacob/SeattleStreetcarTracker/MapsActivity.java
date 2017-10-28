@@ -4,16 +4,20 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.support.annotation.Nullable;
+import android.support.design.widget.NavigationView;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 
 import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.Volley;
+import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.PolylineOptions;
@@ -26,6 +30,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.AttributeSet;
 import android.util.Log;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -42,7 +47,7 @@ import java.util.ArrayList;
 import java.util.Timer;
 import java.util.TimerTask;
 
-public class MapsActivity extends AppCompatActivity implements OnMapReadyCallback, GoogleMap.OnMapClickListener, GoogleMap.OnMarkerClickListener {
+public class MapsActivity extends AppCompatActivity implements OnMapReadyCallback, GoogleMap.OnMapClickListener, GoogleMap.OnMarkerClickListener, NavigationView.OnNavigationItemSelectedListener {
 
     String API_URL = "http://sc-dev.shadowline.net";
 
@@ -51,12 +56,15 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     Timer scTimer = new Timer();
 
     ActionBarDrawerToggle abToggle;
+    DrawerLayout drawerLayout;
+
     RequestQueue queue;
+
+    int route = 1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
 
 
         setContentView(R.layout.main_layout_newest);
@@ -66,19 +74,20 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         mapFragment.getMapAsync(this);
 
         queue = Volley.newRequestQueue(this);
+
         JodaTimeAndroid.init(this);
 
-        DrawerLayout drawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
+        drawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
 
         abToggle = new ActionBarDrawerToggle(this, drawerLayout, toolbar, R.string.drawer_open, R.string.drawer_close);
-
-//        Log.v("Both items", drawerLayout.toString());
         drawerLayout.addDrawerListener(abToggle);
-//        ActionBar actionBar = getSupportActionBar();
-//        getSupportActionBar().setDisplayHomeAsUpEnabled(false);
-//        getSupportActionBar().setHomeButtonEnabled(false);
-//        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.dra)
+
+        NavigationView mNavigationView = (NavigationView) findViewById(R.id.navigation_view);
+
+        if (mNavigationView != null) {
+            mNavigationView.setNavigationItemSelectedListener(this);
+        }
 
 
         LinearLayout bottomPanel = (LinearLayout) findViewById(R.id.bottom_panel);
@@ -88,6 +97,30 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 Log.v("Clicked", "Click was called on bottom panel");
             }
         });
+    }
+
+    @Override
+    public boolean onNavigationItemSelected(MenuItem item) {
+        int id = item.getItemId();
+
+        Log.v("Menu item ", "Was clicked");
+
+        if (id == R.id.nav_item_slu) {
+            drawerLayout.closeDrawers();
+            route = 2;
+
+            LatLng slu = new LatLng(47.621358, -122.338190);
+
+            CameraPosition cameraPosition = new CameraPosition.Builder()
+                    .target(slu)      // Sets the center of the map to Mountain View
+                    .zoom(15)                   // Sets the zoom
+//                    .bearing(90)                // Sets the orientation of the camera to east
+//                    .tilt(30)                   // Sets the tilt of the camera to 30 degrees
+                    .build();                   // Creates a CameraPosition from the builder
+            mMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
+
+        }
+        return true;
     }
 
     @Override
@@ -170,7 +203,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
     private void getStreetcars(final Callback cb) {
-        String url = API_URL + "/api/streetcars/1";
+        String url = API_URL + "/api/streetcars/" + route;
 
         WebRequest wr = new WebRequest();
         wr.streetcarJsonRequest(queue, url, new FetchStreetcars() {
@@ -194,7 +227,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
     private void getStops() {
-        String url = API_URL + "/api/routes/1";
+        String url = API_URL + "/api/routes/" + route;
 
         final ArrayList<Stop> stops = new ArrayList<>();
 
@@ -243,7 +276,6 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         return new MarkerOptions()
             .position(location)
             .icon(BitmapDescriptorFactory.fromBitmap(resizeMapIcons("streetcar",150,150)))
-            .title("Info")
             .anchor(0.5f, 0.5f)
             .rotation(streetcar.heading)
             .zIndex(1.0f);
@@ -271,7 +303,6 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                     }
 
                     streetcar.marker.setRotation(streetcar.heading);
-                    streetcar.marker.setSnippet("Location: " + streetcar.x + " " + streetcar.y + "Last Speed " + convertKmHrToMph(streetcar.speedkmhr));
                     LatLngInterpolator latLngInterpolator = new LatLngInterpolator.Spherical();
                     MarkerAnimation.animateMarkerToICS(streetcar.marker, new LatLng(streetcar.x, streetcar.y), latLngInterpolator);
                 }

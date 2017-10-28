@@ -32,7 +32,7 @@
             android:id="@+id/toolbar"
             android:layout_width="match_parent"
             android:layout_height="56dp"
-            android:background="@android:color/transparent"
+            android:background="@drawable/background_toolbar_translucent"
             />
 
 
@@ -49,9 +49,10 @@
     </FrameLayout>
 
     <android.support.design.widget.NavigationView
+        android:id="@+id/navigation_view"
         android:layout_width="wrap_content"
         android:layout_height="match_parent"
         android:layout_gravity="start"
-        app:menu="@menu/drawer_view" />
+        app:menu="@menu/drawer_view"/>
 
 </android.support.v4.widget.DrawerLayout>
