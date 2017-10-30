@@ -1,6 +1,7 @@
 package jacob.SeattleStreetcarTracker;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
@@ -66,7 +67,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     public Streetcars streetcars = new Streetcars();
     public ArrayList<Stop> stops = new ArrayList<>();
     public ArrayList<Polyline> polylines = new ArrayList<>();
-    public FavoriteStops favoriteStops = new FavoriteStops();
+    public FavoriteStops favoriteStops;
 
     Timer scTimer = new Timer();
 
@@ -91,6 +92,16 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         queue = Volley.newRequestQueue(this);
 
         JodaTimeAndroid.init(this);
+
+        favoriteStops = SettingsManager.getFavoriteStops(getApplicationContext());
+
+        if (favoriteStops != null) {
+            Log.v("Settings contents:", favoriteStops.toString());
+        }
+        else {
+            Log.v("Settings contents:", "They are null");
+            favoriteStops = new FavoriteStops();
+        }
 
 //        STREETCAR_ICON = BitmapDescriptorFactory.fromBitmap(resizeMapIcons("streetcar",150,150));
         STREETCAR_ICON = bitmapDescriptorFromVector(this, R.drawable.ic_navigation_black_24dp);
@@ -128,11 +139,13 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             route = 2;
             swapViews(item, mNavigationView.getMenu().findItem(R.id.nav_item_fhs), new LatLng(47.621358, -122.338190));
             drawerLayout.closeDrawers();
+            drawFavoritesMenu();
         }
         else if (id == R.id.nav_item_fhs) {
             route = 1;
             swapViews(item, mNavigationView.getMenu().findItem(R.id.nav_item_slu), new LatLng(47.609809, -122.320826));
             drawerLayout.closeDrawers();
+            drawFavoritesMenu();
         }
 
         return true;
@@ -142,35 +155,28 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         MenuItem favoriteItem = mNavigationView.getMenu().findItem(R.id.favorite);
         SubMenu subMenu = favoriteItem.getSubMenu();
 
-        subMenu.clear();
+        ArrayList<FavoriteStop> favObj;
 
         if (route == 1) {
-            for (int i = 0; i < favoriteStops.FHS.size(); i++) {
-                subMenu.add(R.id.favorites, 5000, Menu.NONE, favoriteStops.FHS.get(i).stopTitle).setIcon(R.drawable.ic_directions_railway_black_24dp);
-
-                String arrivalText = favoriteStops.FHS.get(i).arrivalTimes;
-
-                if (arrivalText == "") {
-                    arrivalText = "Fetching arrival times";
-                }
-
-                subMenu.add(R.id.favorites, 5001, Menu.NONE, arrivalText);
-            }
+            favObj = favoriteStops.FHS;
         }
-        else if (route == 2) {
-            for (int i = 0; i < favoriteStops.SLU.size(); i++) {
-                subMenu.add(R.id.favorites, 5000, Menu.NONE, favoriteStops.SLU.get(i).stopTitle).setIcon(R.drawable.ic_directions_railway_black_24dp);
-
-                String arrivalText = favoriteStops.SLU.get(i).arrivalTimes;
-
-                if (arrivalText == "") {
-                    arrivalText = "Fetching arrival times";
-                }
-
-                subMenu.add(R.id.favorites, 5001, Menu.NONE, arrivalText);
-            }
+        else {
+            favObj = favoriteStops.SLU;
         }
 
+        subMenu.clear();
+
+        for (int i = 0; i < favObj.size(); i++) {
+            subMenu.add(R.id.favorites, 5000, Menu.NONE, favObj.get(i).stopTitle).setIcon(R.drawable.ic_directions_railway_black_24dp);
+
+            String arrivalText = favObj.get(i).arrivalTimes;
+
+            if (arrivalText == "") {
+                arrivalText = "Fetching arrival times";
+            }
+
+            subMenu.add(R.id.favorites, 5001, Menu.NONE, arrivalText);
+        }
     }
 
     private void swapViews(MenuItem item, MenuItem oldItem, LatLng routeCenter) {
@@ -527,10 +533,12 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                         if (favoriteStops.isFavorited(clickedStop.stopId, route)) {
                             favoriteStops.removeFavorite(clickedStop.stopId, route);
                             star.setImageResource(R.drawable.ic_star_border_black_24dp);
+                            SettingsManager.saveFavoriteStops(getApplicationContext(), favoriteStops);
                         }
                         else {
                             favoriteStops.addFavorite(clickedStop.stopId, clickedStop.title, route);
                             star.setImageResource(R.drawable.ic_star_black_24dp);
+                            SettingsManager.saveFavoriteStops(getApplicationContext(), favoriteStops);
                             getFavoritesArrivalTimes();
                         }
 
