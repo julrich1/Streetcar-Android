@@ -14,13 +14,8 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
-import com.google.android.gms.maps.model.BitmapDescriptorFactory;
-import com.google.android.gms.maps.model.CameraPosition;
-import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.LatLngBounds;
-import com.google.android.gms.maps.model.Marker;
-import com.google.android.gms.maps.model.MarkerOptions;
-import com.google.android.gms.maps.model.PolylineOptions;
+import com.google.android.gms.maps.model.*;
+import com.google.android.gms.maps.model.Polyline;
 import com.google.gson.Gson;
 
 import android.support.v4.widget.DrawerLayout;
@@ -51,12 +46,22 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     String API_URL = "http://sc-dev.shadowline.net";
 
+    private BitmapDescriptor STREETCAR_ICON;
+    private BitmapDescriptor STOP_ICON;
+
+    public static final String REQUEST_TAG = "SCRequests";
+
+
     private GoogleMap mMap;
     public Streetcars streetcars = new Streetcars();
+    public ArrayList<Stop> stops = new ArrayList<>();
+    public ArrayList<Polyline> polylines = new ArrayList<>();
+
     Timer scTimer = new Timer();
 
     ActionBarDrawerToggle abToggle;
     DrawerLayout drawerLayout;
+    NavigationView mNavigationView;
 
     RequestQueue queue;
 
@@ -65,7 +70,6 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
 
         setContentView(R.layout.main_layout_newest);
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
@@ -77,13 +81,16 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
         JodaTimeAndroid.init(this);
 
+        STREETCAR_ICON = BitmapDescriptorFactory.fromBitmap(resizeMapIcons("streetcar",150,150));
+        STOP_ICON = BitmapDescriptorFactory.fromBitmap(resizeMapIcons("stop_icon",50,50));
+
         drawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
 
         abToggle = new ActionBarDrawerToggle(this, drawerLayout, toolbar, R.string.drawer_open, R.string.drawer_close);
         drawerLayout.addDrawerListener(abToggle);
 
-        NavigationView mNavigationView = (NavigationView) findViewById(R.id.navigation_view);
+        mNavigationView = (NavigationView) findViewById(R.id.navigation_view);
 
         if (mNavigationView != null) {
             mNavigationView.setNavigationItemSelectedListener(this);
@@ -106,21 +113,34 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         Log.v("Menu item ", "Was clicked");
 
         if (id == R.id.nav_item_slu) {
-            drawerLayout.closeDrawers();
             route = 2;
-
-            LatLng slu = new LatLng(47.621358, -122.338190);
-
-            CameraPosition cameraPosition = new CameraPosition.Builder()
-                    .target(slu)      // Sets the center of the map to Mountain View
-                    .zoom(15)                   // Sets the zoom
-//                    .bearing(90)                // Sets the orientation of the camera to east
-//                    .tilt(30)                   // Sets the tilt of the camera to 30 degrees
-                    .build();                   // Creates a CameraPosition from the builder
-            mMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
-
+            swapViews(item, mNavigationView.getMenu().findItem(R.id.nav_item_fhs), new LatLng(47.621358, -122.338190));
         }
+        else if (id == R.id.nav_item_fhs) {
+            route = 1;
+            swapViews(item, mNavigationView.getMenu().findItem(R.id.nav_item_slu), new LatLng(47.609809, -122.320826));
+        }
+
+        drawerLayout.closeDrawers();
+
         return true;
+    }
+
+    private void swapViews(MenuItem item, MenuItem oldItem, LatLng routeCenter) {
+        queue.cancelAll(REQUEST_TAG);
+        removeStops();
+        removeRouteLines();
+        removeStreetcars();
+        oldItem.setIcon(null);
+        oldItem.setChecked(false);
+
+        item.setIcon(R.drawable.ic_check_black_24dp);
+
+        CameraPosition cameraPosition = new CameraPosition.Builder()
+                .target(routeCenter)
+                .zoom(15)
+                .build();
+        mMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
     }
 
     @Override
@@ -185,10 +205,10 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
 
+        mMap.getUiSettings().setRotateGesturesEnabled(false);
+
         mMap.setOnMarkerClickListener(this);
         mMap.setOnMapClickListener(this);
-
-        getStops();
     }
 
     private void startTimers() {
@@ -197,9 +217,35 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         scTimer.scheduleAtFixedRate(new TimerTask(){
             @Override
             public void run() {
+                if (stops.size() == 0) {
+                    getStops();
+                }
+
                 updateStreetcars();
             }
         }, 0, 2000);
+    }
+
+    private void removeStops() {
+        for (int i = 0; i < stops.size(); i++) {
+            stops.get(i).marker.remove();
+        }
+
+        stops.clear();
+    }
+
+    private void removeRouteLines() {
+        for (int i = 0; i < polylines.size(); i++) {
+            polylines.get(i).remove();
+        }
+    }
+
+    private void removeStreetcars() {
+        for (int i = 0; i < streetcars.length(); i++) {
+            streetcars.get(i).marker.remove();
+        }
+
+        streetcars.deleteAll();
     }
 
     private void getStreetcars(final Callback cb) {
@@ -227,9 +273,9 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
     private void getStops() {
-        String url = API_URL + "/api/routes/" + route;
+        if (stops.size() != 0) { return; }
 
-        final ArrayList<Stop> stops = new ArrayList<>();
+        String url = API_URL + "/api/routes/" + route;
 
         WebRequest wr = new WebRequest();
         wr.stopsRoutesJsonRequest(queue, url, new FetchedStopsAndRoutes() {
@@ -265,7 +311,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                     }
                 }
 
-                drawStops(stops);
+                drawStops();
             }
         });
     }
@@ -275,7 +321,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
         return new MarkerOptions()
             .position(location)
-            .icon(BitmapDescriptorFactory.fromBitmap(resizeMapIcons("streetcar",150,150)))
+            .icon(STREETCAR_ICON)
             .anchor(0.5f, 0.5f)
             .rotation(streetcar.heading)
             .zIndex(1.0f);
@@ -312,23 +358,26 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         });
     }
 
-    private void drawStops(ArrayList<Stop> stops) {
+    private void drawStops() {
         for (int i = 0; i < stops.size(); i++) {
             LatLng location = new LatLng(stops.get(i).lat, stops.get(i).lon);
             Marker marker = mMap.addMarker(new MarkerOptions()
-                .icon(BitmapDescriptorFactory.fromBitmap(resizeMapIcons("stop_icon",50,50)))
+                .icon(STOP_ICON)
                 .anchor(0.5f, 0.5f)
                 .position(location));
 
             marker.setTag("stop " + stops.get(i).stopId);
+            stops.get(i).marker = marker;
         }
     }
 
     private void drawRouteLines(ArrayList<LatLng> points) {
-        mMap.addPolyline(new PolylineOptions()
+        Polyline pl = mMap.addPolyline(new PolylineOptions()
             .addAll(points)
             .width(10)
             .color(0xB3000000));
+
+        polylines.add(pl);
     }
 
     private Bitmap resizeMapIcons(String iconName, int width, int height){
@@ -342,7 +391,11 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
     private void getArrivalTime(int stopId) {
-        String url = "http://webservices.nextbus.com/service/publicJSONFeed?command=predictions&a=seattle-sc&r=" + "FHS" + "&s=" + stopId;
+        String routeString;
+
+        if (route == 1) { routeString = "FHS"; }
+        else { routeString = "SLU"; }
+        String url = "http://webservices.nextbus.com/service/publicJSONFeed?command=predictions&a=seattle-sc&r=" + routeString + "&s=" + stopId;
 
         WebRequest wr = new WebRequest();
         wr.getArrivalTimes(queue, url, new FetchArrivalTimes() {

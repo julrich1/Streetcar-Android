@@ -1,5 +1,7 @@
 package jacob.SeattleStreetcarTracker;
 
+import com.google.android.gms.maps.model.Marker;
+
 /**
  * Created by jacob on 10/24/17.
  */
@@ -9,4 +11,5 @@ public class Stop {
     public float lat;
     public float lon;
     public String title;
+    public Marker marker;
 }

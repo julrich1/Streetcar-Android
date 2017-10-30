@@ -21,6 +21,9 @@ import java.util.ArrayList;
  */
 
 public class WebRequest {
+    public static final String REQUEST_TAG = "SCRequests";
+
+
     public void streetcarJsonRequest(RequestQueue queue, final String url, final FetchStreetcars callback) {
         JsonArrayRequest jsArrayRequest = new JsonArrayRequest
             (Request.Method.GET, url, null, new Response.Listener<JSONArray>() {
@@ -38,6 +41,7 @@ public class WebRequest {
 
                 }
             });
+        jsArrayRequest.setTag(REQUEST_TAG);
         queue.add(jsArrayRequest);
     }
 
@@ -68,6 +72,7 @@ public class WebRequest {
 
                     }
                 });
+        jsObjectRequest.setTag(REQUEST_TAG);
         queue.add(jsObjectRequest);
     }
 
@@ -105,6 +110,7 @@ public class WebRequest {
 
                     }
                 });
+        jsonObjectRequest.setTag(REQUEST_TAG);
         queue.add(jsonObjectRequest);
     }
 
