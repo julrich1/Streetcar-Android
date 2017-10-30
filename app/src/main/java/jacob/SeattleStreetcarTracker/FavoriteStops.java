@@ -1,9 +1,12 @@
 package jacob.SeattleStreetcarTracker;
 
+import android.util.Log;
+
 import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.Volley;
 
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by jacob on 10/30/17.
@@ -90,5 +93,42 @@ public class FavoriteStops {
         }
 
         return queryString;
+    }
+
+    public void addArrivalTimes(ArrayList<ArrayList> times, int route) {
+        ArrayList<FavoriteStop> searchObj;
+        int stopId;
+
+        if (route == 1) { searchObj = FHS; }
+        else { searchObj = SLU; }
+
+
+        for (int i = 0; i < times.size(); i++) {
+            stopId = (int) times.get(i).get(0);
+
+            for (int j = 0; j < searchObj.size(); j++) {
+                Log.v("Comparison", searchObj.get(i).stopId + " " + stopId);
+                if (searchObj.get(j).stopId == stopId) {
+                    ArrayList currentObj = times.get(i);
+
+                    searchObj.get(j).arrivalTimes = createArrivalString(currentObj.subList(1, currentObj.size()));
+
+                    Log.v("Found match", "Adding arrival times");
+                    break;
+                }
+            }
+        }
+    }
+
+    public String createArrivalString(List arrivals) {
+        String arrivalStr = "";
+
+        for (int i = 0; i < arrivals.size(); i++) {
+            arrivalStr += arrivals.get(i) + ", ";
+        }
+
+        arrivalStr = arrivalStr.substring(0, arrivalStr.length() - 2) + " minutes";
+
+        return arrivalStr;
     }
 }

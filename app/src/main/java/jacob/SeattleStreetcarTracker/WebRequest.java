@@ -122,22 +122,34 @@ public class WebRequest {
         return arrivalTimes;
     }
 
-    public void getMultipleFavoriteArrivalTimes(RequestQueue queue, final String url, final FetchArrivalTimes callback) {
+    public void getMultipleFavoriteArrivalTimes(RequestQueue queue, final String url, final FetchAllArrivalTimes callback) {
         JsonObjectRequest jsonObjectRequest = new JsonObjectRequest
                 (Request.Method.GET, url, null, new Response.Listener<JSONObject>() {
                     @Override
                     public void onResponse(JSONObject response) {
+                        ArrayList<ArrayList> arrivals = new ArrayList<>();
+                        ArrayList arrival;
+
                         Log.v("Response", response.toString());
                         try {
+                            JSONArray predictions = response.getJSONArray("predictions");
 
-                            Object predictions = response.get("predictions");
+                            for (int i = 0; i < predictions.length(); i++) {
+                                arrival = new ArrayList();
 
-                            if (predictions instanceof JSONArray) {
-                                predictions = (JSONArray)predictions;
+                                JSONObject prediction = predictions.getJSONObject(i);
+                                arrival.add(prediction.optInt("stopTag"));
+
+                                JSONArray predictionArray = prediction.getJSONObject("direction").getJSONArray("prediction");
+
+                                for (int j = 0; j < predictionArray.length(); j++) {
+                                    arrival.add(predictionArray.getJSONObject(j).optInt("minutes"));
+                                }
+
+                                arrivals.add(arrival);
                             }
-                            else if (predictions instanceof JSONObject) {
-                                callback.onTaskCompleted(parseArrivalObject((JSONObject)predictions));
-                            }
+
+                            callback.onTaskCompleted(arrivals);
                         }
                         catch (JSONException error) {
                             Log.v("Error", "There was an error parsing JSON " + error.toString());

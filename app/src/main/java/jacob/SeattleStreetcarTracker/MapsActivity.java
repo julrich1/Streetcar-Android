@@ -636,10 +636,12 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             String url = "http://webservices.nextbus.com/service/publicJSONFeed?command=predictionsForMultiStops&a=seattle-sc" + favoriteStops.getQueryString(route);
 
             WebRequest wr = new WebRequest();
-            wr.getMultipleFavoriteArrivalTimes(queue, url, new FetchArrivalTimes() {
+            wr.getMultipleFavoriteArrivalTimes(queue, url, new FetchAllArrivalTimes() {
                 @Override
-                public void onTaskCompleted(ArrayList response) {
+                public void onTaskCompleted(ArrayList<ArrayList> response) {
                     Log.v("Final response", response.toString());
+                    favoriteStops.addArrivalTimes(response, route);
+                    drawFavoritesMenu();
                 }
             });
         }
