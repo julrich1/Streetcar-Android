@@ -44,6 +44,13 @@
             android:background="#e9e9e9"
             android:orientation="vertical">
 
+            <LinearLayout
+                android:id="@+id/stop_name"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+            </LinearLayout>
+
         </LinearLayout>
 
     </FrameLayout>
@@ -53,6 +60,7 @@
         android:layout_width="wrap_content"
         android:layout_height="match_parent"
         android:layout_gravity="start"
-        app:menu="@menu/drawer_view"/>
+        app:menu="@menu/drawer_view">
+    </android.support.design.widget.NavigationView>
 
 </android.support.v4.widget.DrawerLayout>

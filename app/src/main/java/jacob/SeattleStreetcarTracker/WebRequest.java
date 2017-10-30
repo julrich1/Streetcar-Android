@@ -89,6 +89,10 @@ public class WebRequest {
                             String stopName = response.getJSONObject("predictions").optString("stopTitle");
                             arrivalTimes.add(stopName);
 
+                            int stopId = response.getJSONObject("predictions").optInt("stopTag");
+                            arrivalTimes.add(stopId);
+
+
                             JSONArray predictionsArray = response.getJSONObject("predictions").getJSONObject("direction").getJSONArray("prediction");
 
                             for (int i = 0; i < predictionsArray.length(); i++) {
@@ -114,4 +118,7 @@ public class WebRequest {
         queue.add(jsonObjectRequest);
     }
 
-}
+    public void getMultipleArrivalTimes(RequestQueue queue, final String url, final FetchArrivalTimes callback) {
+
+
+    }

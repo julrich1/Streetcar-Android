@@ -12,4 +12,9 @@ public class Stop {
     public float lon;
     public String title;
     public Marker marker;
+
+    public Stop(int id, String stopTitle) {
+        stopId = id;
+        title = stopTitle;
+    }
 }

@@ -2,9 +2,8 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
-    <item android:title="Route"
-        android:icon="@drawable/ic_directions_railway_black_24dp"
-        >
+    <item android:title="Routes"
+        android:icon="@drawable/ic_directions_railway_black_24dp">
         <menu>
             <group android:checkableBehavior="single">
                 <item
@@ -21,12 +20,18 @@
     </item>
 
 
-    <group>
-        <item android:title="Favorite Stops"
-            android:icon="@drawable/ic_star_black_24dp" />
-    </group>
-    <group>
-        <item android:title="8th and John"
-            android:icon="@drawable/ic_directions_railway_black_24dp"/>
-    </group>
+    <item android:title="Favorite Stops" android:id="@+id/favorite">
+        <menu>
+            <group android:id="@+id/favorites">
+                <item android:title="8th and John"
+                    android:icon="@drawable/ic_directions_railway_black_24dp"/>
+                <item android:title="Arriving in 1, 12, 18, 24, 56 mins"></item>
+
+                <item android:title="Marion and Pike"
+                    android:icon="@drawable/ic_directions_railway_black_24dp"/>
+                <item android:title="Arriving in 1, 12, 18, 24, 56 mins"></item>
+            </group>
+
+        </menu>
+    </item>
 </menu>

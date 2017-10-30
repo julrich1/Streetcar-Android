@@ -3,7 +3,10 @@ package jacob.SeattleStreetcarTracker;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.drawable.Drawable;
 import android.support.annotation.Nullable;
+import android.support.design.internal.NavigationMenuView;
 import android.support.design.widget.NavigationView;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
@@ -18,15 +21,22 @@ import com.google.android.gms.maps.model.*;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.gson.Gson;
 
+import android.support.v4.content.ContextCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.DividerItemDecoration;
+import android.support.v7.widget.LinearLayoutCompat;
 import android.support.v7.widget.Toolbar;
 import android.util.AttributeSet;
 import android.util.Log;
+import android.view.Gravity;
+import android.view.Menu;
 import android.view.MenuItem;
+import android.view.SubMenu;
 import android.view.View;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -56,6 +66,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     public Streetcars streetcars = new Streetcars();
     public ArrayList<Stop> stops = new ArrayList<>();
     public ArrayList<Polyline> polylines = new ArrayList<>();
+    public FavoriteStops favoriteStops = new FavoriteStops();
 
     Timer scTimer = new Timer();
 
@@ -81,7 +92,8 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
         JodaTimeAndroid.init(this);
 
-        STREETCAR_ICON = BitmapDescriptorFactory.fromBitmap(resizeMapIcons("streetcar",150,150));
+//        STREETCAR_ICON = BitmapDescriptorFactory.fromBitmap(resizeMapIcons("streetcar",150,150));
+        STREETCAR_ICON = bitmapDescriptorFromVector(this, R.drawable.ic_navigation_black_24dp);
         STOP_ICON = BitmapDescriptorFactory.fromBitmap(resizeMapIcons("stop_icon",50,50));
 
         drawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
@@ -92,10 +104,12 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
         mNavigationView = (NavigationView) findViewById(R.id.navigation_view);
 
+        favoriteStops.FHS.add(new FavoriteStop(100, "Pike and 1st"));
+
         if (mNavigationView != null) {
             mNavigationView.setNavigationItemSelectedListener(this);
+            drawFavoritesMenu();
         }
-
 
         LinearLayout bottomPanel = (LinearLayout) findViewById(R.id.bottom_panel);
         bottomPanel.setOnClickListener(new View.OnClickListener() {
@@ -115,15 +129,36 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         if (id == R.id.nav_item_slu) {
             route = 2;
             swapViews(item, mNavigationView.getMenu().findItem(R.id.nav_item_fhs), new LatLng(47.621358, -122.338190));
+            drawerLayout.closeDrawers();
         }
         else if (id == R.id.nav_item_fhs) {
             route = 1;
             swapViews(item, mNavigationView.getMenu().findItem(R.id.nav_item_slu), new LatLng(47.609809, -122.320826));
+            drawerLayout.closeDrawers();
         }
 
-        drawerLayout.closeDrawers();
-
         return true;
+    }
+
+    private void drawFavoritesMenu() {
+        MenuItem favoriteItem = mNavigationView.getMenu().findItem(R.id.favorite);
+        SubMenu subMenu = favoriteItem.getSubMenu();
+
+        subMenu.clear();
+
+        if (route == 1) {
+            for (int i = 0; i < favoriteStops.FHS.size(); i++) {
+                subMenu.add(R.id.favorites, 5000, Menu.NONE, favoriteStops.FHS.get(i).stopTitle).setIcon(R.drawable.ic_directions_railway_black_24dp);
+                subMenu.add(R.id.favorites, 5001, Menu.NONE, "Arriving in 1, 24, 35, 65, 190 mins");
+            }
+        }
+        else if (route == 2) {
+            for (int i = 0; i < favoriteStops.SLU.size(); i++) {
+                subMenu.add(R.id.favorites, 5000, Menu.NONE, favoriteStops.SLU.get(i).stopTitle).setIcon(R.drawable.ic_directions_railway_black_24dp);
+                subMenu.add(R.id.favorites, 5001, Menu.NONE, "Arriving in 1, 24, 35, 65, 190 mins");
+            }
+        }
+
     }
 
     private void swapViews(MenuItem item, MenuItem oldItem, LatLng routeCenter) {
@@ -395,6 +430,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
         if (route == 1) { routeString = "FHS"; }
         else { routeString = "SLU"; }
+
         String url = "http://webservices.nextbus.com/service/publicJSONFeed?command=predictions&a=seattle-sc&r=" + routeString + "&s=" + stopId;
 
         WebRequest wr = new WebRequest();
@@ -417,17 +453,80 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
                 LinearLayout bottomPanel = (LinearLayout) findViewById(R.id.bottom_panel);
 
+                /// Create new linearlayout to contain the stop name and star icon
+                LinearLayout stopNameLayout = new LinearLayout(getApplicationContext());
+                stopNameLayout.setLayoutParams(new LinearLayoutCompat.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT));
+                stopNameLayout.setOrientation(LinearLayout.HORIZONTAL);
+                /// End creation of linearlayout
+
                 bottomPanel.removeAllViews();
 
+                /// Create stop title text and params
+                LinearLayout.LayoutParams tvParams = new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.WRAP_CONTENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT,
+                        1f
+                );
+                tvParams.setMargins(15, 5, 5, 15);
+
                 TextView tv = new TextView(getApplicationContext());
-                tv.setLayoutParams(lparams);
-                tv.setTextAppearance(R.style.TextAppearance_AppCompat_Large);
                 tv.setText(arrivalTimes.get(0).toString());
-                bottomPanel.addView(tv);
+                tv.setLayoutParams(tvParams);
+                tv.setTextAppearance(R.style.TextAppearance_AppCompat_Large);
+//                tv.setBackgroundColor(0xFFFF0000);
+                stopNameLayout.addView(tv);
+                /// End creating stop title text and params
+
+
+                /// Create star icon and params
+                LinearLayout.LayoutParams starIconParams = new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.WRAP_CONTENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT
+                );
+                starIconParams.gravity = Gravity.CENTER_VERTICAL;
+
+                ImageView emptyStar = new ImageView(getApplicationContext());
+                emptyStar.setLayoutParams(starIconParams);
+//                emptyStar.setBackgroundColor(0xFF00FF00);
+
+                if (favoriteStops.isFavorited((int) arrivalTimes.get(1), route)) {
+                    emptyStar.setImageResource(R.drawable.ic_star_black_24dp);
+                }
+                else {
+                    emptyStar.setImageResource(R.drawable.ic_star_border_black_24dp);
+                }
+
+                emptyStar.setTag(new Stop((int) arrivalTimes.get(1), (String) arrivalTimes.get(0)));
+
+                emptyStar.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        Log.v("Clicked", "Click was called on the star!");
+                        ImageView star = (ImageView) v;
+
+                        Stop clickedStop = (Stop) star.getTag();
+
+                        if (favoriteStops.isFavorited(clickedStop.stopId, route)) {
+                            favoriteStops.removeFavorite(clickedStop.stopId, route);
+                            star.setImageResource(R.drawable.ic_star_border_black_24dp);
+                        }
+                        else {
+                            favoriteStops.addFavorite(clickedStop.stopId, clickedStop.title, route);
+                            star.setImageResource(R.drawable.ic_star_black_24dp);
+                        }
+
+                        drawFavoritesMenu();
+                    }
+                });
+
+                stopNameLayout.addView(emptyStar);
+                // End creating star icon and params
+
+                bottomPanel.addView(stopNameLayout);
 
                 String arrivalStr = "Arriving in ";
 
-                for (int i = 1; i < arrivalTimes.size(); i++) {
+                for (int i = 2; i < arrivalTimes.size(); i++) {
                     arrivalStr += arrivalTimes.get(i) + ", ";
                 }
 
@@ -478,5 +577,32 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 bottomPanel.addView(tv);
             }
         });
+    }
+
+    private getFavoritesArrivalTimes() {
+        favoriteStops.getQueryString(route);
+
+        String url = "http://webservices.nextbus.com/service/publicJSONFeed?command=predictionsForMultiStops&a=seattle-sc" + favoriteStops.getQueryString(route);
+
+    }
+
+//    private BitmapDescriptor getBitmapDescriptor(int id) {
+//        Drawable vectorDrawable = context.getDrawable(id);
+//        int h = ((int) Utils.convertDpToPixel(42, context));
+//        int w = ((int) Utils.convertDpToPixel(25, context));
+//        vectorDrawable.setBounds(0, 0, w, h);
+//        Bitmap bm = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
+//        Canvas canvas = new Canvas(bm);
+//        vectorDrawable.draw(canvas);
+//        return BitmapDescriptorFactory.fromBitmap(bm);
+//    }
+
+    private BitmapDescriptor bitmapDescriptorFromVector(Context context, int vectorResId) {
+        Drawable vectorDrawable = ContextCompat.getDrawable(context, vectorResId);
+        vectorDrawable.setBounds(0, 0, vectorDrawable.getIntrinsicWidth() * 2, vectorDrawable.getIntrinsicHeight() * 2);
+        Bitmap bitmap = Bitmap.createBitmap(vectorDrawable.getIntrinsicWidth() * 2, vectorDrawable.getIntrinsicHeight() * 2, Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(bitmap);
+        vectorDrawable.draw(canvas);
+        return BitmapDescriptorFactory.fromBitmap(bitmap);
     }
 }
