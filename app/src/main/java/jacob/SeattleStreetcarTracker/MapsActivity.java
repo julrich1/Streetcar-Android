@@ -104,8 +104,6 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
         mNavigationView = (NavigationView) findViewById(R.id.navigation_view);
 
-        favoriteStops.FHS.add(new FavoriteStop(100, "Pike and 1st"));
-
         if (mNavigationView != null) {
             mNavigationView.setNavigationItemSelectedListener(this);
             drawFavoritesMenu();
@@ -149,13 +147,27 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         if (route == 1) {
             for (int i = 0; i < favoriteStops.FHS.size(); i++) {
                 subMenu.add(R.id.favorites, 5000, Menu.NONE, favoriteStops.FHS.get(i).stopTitle).setIcon(R.drawable.ic_directions_railway_black_24dp);
-                subMenu.add(R.id.favorites, 5001, Menu.NONE, "Arriving in 1, 24, 35, 65, 190 mins");
+
+                String arrivalText = favoriteStops.FHS.get(i).arrivalTimes;
+
+                if (arrivalText == "") {
+                    arrivalText = "Fetching arrival times";
+                }
+
+                subMenu.add(R.id.favorites, 5001, Menu.NONE, arrivalText);
             }
         }
         else if (route == 2) {
             for (int i = 0; i < favoriteStops.SLU.size(); i++) {
                 subMenu.add(R.id.favorites, 5000, Menu.NONE, favoriteStops.SLU.get(i).stopTitle).setIcon(R.drawable.ic_directions_railway_black_24dp);
-                subMenu.add(R.id.favorites, 5001, Menu.NONE, "Arriving in 1, 24, 35, 65, 190 mins");
+
+                String arrivalText = favoriteStops.SLU.get(i).arrivalTimes;
+
+                if (arrivalText == "") {
+                    arrivalText = "Fetching arrival times";
+                }
+
+                subMenu.add(R.id.favorites, 5001, Menu.NONE, arrivalText);
             }
         }
 
@@ -226,7 +238,12 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
             switch(type) {
                 case "stop":
-                    getArrivalTime(id);
+                    getArrivalTime(id, new CallbackArrayList() {
+                        @Override
+                        public void done(ArrayList response) {
+                            createArrivalText(response);
+                        }
+                    });
                     break;
                 case "streetcar":
                     createStreetcarText(streetcars.get(streetcars.findByStreetcarId(id)));
@@ -425,7 +442,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         return Math.round(speed * 0.62137119223733) + " Mph";
     }
 
-    private void getArrivalTime(int stopId) {
+    private void getArrivalTime(int stopId, final CallbackArrayList cb) {
         String routeString;
 
         if (route == 1) { routeString = "FHS"; }
@@ -439,7 +456,8 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             public void onTaskCompleted(ArrayList response) {
                 Log.v("Response from arrival", response.toString());
 
-                createArrivalText(response);
+                cb.done(response);
+//                createArrivalText(response);
             }
         });
     }
@@ -513,6 +531,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                         else {
                             favoriteStops.addFavorite(clickedStop.stopId, clickedStop.title, route);
                             star.setImageResource(R.drawable.ic_star_black_24dp);
+                            getFavoritesArrivalTimes();
                         }
 
                         drawFavoritesMenu();
@@ -579,11 +598,51 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         });
     }
 
-    private getFavoritesArrivalTimes() {
-        favoriteStops.getQueryString(route);
+    private void getFavoritesArrivalTimes() {
+        ArrayList<FavoriteStop> favObj;
 
-        String url = "http://webservices.nextbus.com/service/publicJSONFeed?command=predictionsForMultiStops&a=seattle-sc" + favoriteStops.getQueryString(route);
+        if (route == 1) {
+            favObj = favoriteStops.FHS;
+        }
+        else {
+            favObj = favoriteStops.SLU;
+        }
 
+        if (favObj.size() == 0) {
+            return;
+        }
+        else if (favObj.size() == 1) {
+            getArrivalTime(favObj.get(0).stopId, new CallbackArrayList() {
+                @Override
+                public void done(ArrayList response) {
+                    String arrivalStr = "";
+
+                    for (int i = 2; i < response.size(); i++) {
+                        arrivalStr += response.get(i) + ", ";
+                    }
+
+                    arrivalStr = arrivalStr.substring(0, arrivalStr.length() - 2) + " minutes";
+
+                    favoriteStops.searchByStopId((int) response.get(1), route).arrivalTimes = arrivalStr;
+
+                    Log.v("Favorite Event", "Favorite size is 1, and response received. Calling drawFavoritesMenu()");
+                    drawFavoritesMenu();
+                }
+            });
+        }
+        else {
+            favoriteStops.getQueryString(route);
+
+            String url = "http://webservices.nextbus.com/service/publicJSONFeed?command=predictionsForMultiStops&a=seattle-sc" + favoriteStops.getQueryString(route);
+
+            WebRequest wr = new WebRequest();
+            wr.getMultipleFavoriteArrivalTimes(queue, url, new FetchArrivalTimes() {
+                @Override
+                public void onTaskCompleted(ArrayList response) {
+                    Log.v("Final response", response.toString());
+                }
+            });
+        }
     }
 
 //    private BitmapDescriptor getBitmapDescriptor(int id) {

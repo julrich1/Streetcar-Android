@@ -79,35 +79,71 @@ public class WebRequest {
     public void getArrivalTimes(RequestQueue queue, final String url, final FetchArrivalTimes callback) {
         JsonObjectRequest jsonObjectRequest = new JsonObjectRequest
                 (Request.Method.GET, url, null, new Response.Listener<JSONObject>() {
-
                     @Override
                     public void onResponse(JSONObject response) {
-                        ArrayList arrivalTimes = new ArrayList();
+                        Log.v("Response", response.toString());
 
+                        callback.onTaskCompleted(parseArrivalObject(response));
+                    }
+                }, new Response.ErrorListener() {
+                    @Override
+                    public void onErrorResponse(VolleyError error) {
+                        Log.v("Error", "Error fetching " + url + error.toString());
+
+                    }
+                });
+
+        jsonObjectRequest.setTag(REQUEST_TAG);
+        queue.add(jsonObjectRequest);
+    }
+
+    private ArrayList parseArrivalObject(JSONObject response) {
+        ArrayList arrivalTimes = new ArrayList();
+
+        try {
+            String stopName = response.getJSONObject("predictions").optString("stopTitle");
+            arrivalTimes.add(stopName);
+
+            int stopId = response.getJSONObject("predictions").optInt("stopTag");
+            arrivalTimes.add(stopId);
+
+
+            JSONArray predictionsArray = response.getJSONObject("predictions").getJSONObject("direction").getJSONArray("prediction");
+
+            for (int i = 0; i < predictionsArray.length(); i++) {
+                int arrivalTime = predictionsArray.getJSONObject(i).optInt("minutes");
+                arrivalTimes.add(arrivalTime);
+            }
+        }
+        catch (JSONException error) {
+            Log.v("Error", "There was an error parsing JSON " + error.toString());
+        }
+
+        return arrivalTimes;
+    }
+
+    public void getMultipleFavoriteArrivalTimes(RequestQueue queue, final String url, final FetchArrivalTimes callback) {
+        JsonObjectRequest jsonObjectRequest = new JsonObjectRequest
+                (Request.Method.GET, url, null, new Response.Listener<JSONObject>() {
+                    @Override
+                    public void onResponse(JSONObject response) {
                         Log.v("Response", response.toString());
                         try {
-                            String stopName = response.getJSONObject("predictions").optString("stopTitle");
-                            arrivalTimes.add(stopName);
 
-                            int stopId = response.getJSONObject("predictions").optInt("stopTag");
-                            arrivalTimes.add(stopId);
+                            Object predictions = response.get("predictions");
 
-
-                            JSONArray predictionsArray = response.getJSONObject("predictions").getJSONObject("direction").getJSONArray("prediction");
-
-                            for (int i = 0; i < predictionsArray.length(); i++) {
-                                int arrivalTime = predictionsArray.getJSONObject(i).optInt("minutes");
-                                arrivalTimes.add(arrivalTime);
+                            if (predictions instanceof JSONArray) {
+                                predictions = (JSONArray)predictions;
                             }
-
-                            callback.onTaskCompleted(arrivalTimes);
+                            else if (predictions instanceof JSONObject) {
+                                callback.onTaskCompleted(parseArrivalObject((JSONObject)predictions));
+                            }
                         }
                         catch (JSONException error) {
                             Log.v("Error", "There was an error parsing JSON " + error.toString());
                         }
                     }
                 }, new Response.ErrorListener() {
-
                     @Override
                     public void onErrorResponse(VolleyError error) {
                         Log.v("Error", "Error fetching " + url + error.toString());
@@ -116,9 +152,5 @@ public class WebRequest {
                 });
         jsonObjectRequest.setTag(REQUEST_TAG);
         queue.add(jsonObjectRequest);
-    }
-
-    public void getMultipleArrivalTimes(RequestQueue queue, final String url, final FetchArrivalTimes callback) {
-
-
+        }
     }

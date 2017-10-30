@@ -1,5 +1,8 @@
 package jacob.SeattleStreetcarTracker;
 
+import com.android.volley.RequestQueue;
+import com.android.volley.toolbox.Volley;
+
 import java.util.ArrayList;
 
 /**
@@ -51,6 +54,21 @@ public class FavoriteStops {
         }
 
         return false;
+    }
+
+    public FavoriteStop searchByStopId(int stopId, int route) {
+        if (route == 1) {
+            for (int i = 0; i < FHS.size(); i++) {
+                if (FHS.get(i).stopId == stopId) { return FHS.get(i); }
+            }
+        }
+        else if (route == 2) {
+            for (int i = 0; i < SLU.size(); i++) {
+                if (SLU.get(i).stopId == stopId) { return SLU.get(i); }
+            }
+        }
+
+        return null;
     }
 
     public String getQueryString(int route) {
