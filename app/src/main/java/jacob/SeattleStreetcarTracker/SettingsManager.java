@@ -13,7 +13,7 @@ import com.google.gson.Gson;
 public class SettingsManager {
 
     private static SharedPreferences getPrefs(Context context) {
-        return context.getSharedPreferences("favorites", Context.MODE_PRIVATE);
+        return context.getSharedPreferences("streetcar_settings", Context.MODE_PRIVATE);
     }
 
     public static void saveFavoriteStops(Context context, FavoriteStops fvStops) {
@@ -33,35 +33,18 @@ public class SettingsManager {
         String favorites_JSON = getPrefs(context).getString("stops", "");
 
         return gson.fromJson(favorites_JSON, FavoriteStops.class);
-
-//        SharedPreferences settings = getSharedPreferences(PREFS_NAME, 0);
-//        boolean silent = settings.getBoolean("silentMode", false);
-//        setSilent(silent);
-
-
-//        editor.putString("stops", favorites_JSON);
-//        Log.v("Settings:", "Saving them now with this string: " + favorites_JSON);
-//        editor.commit();
     }
 
+    public static void saveRoute (Context context, int route) {
+        SharedPreferences.Editor editor = getPrefs(context).edit();
 
+        editor.putInt("route", route);
+        editor.commit();
+    }
 
-//    public void saveFavoritesSettings(FavoriteStops fvStops) {
-//        String favorites_JSON = gson.toJson(fvStops);
-//
-//        SharedPreferences settings = getSharedPreferences("favorites", 0);
-//        SharedPreferences.Editor editor = settings.edit();
-//        editor.putString("stops", favorites_JSON);
-//
-//        // Commit the edits!
-//        editor.commit();
-//
-//
-//        private static SharedPreferences.Editor editor = settings.edit;
-//
-//
-//        editor.putString("favorites", user_json);
-//        editor.commit();
-//
-//    }
+    public static int loadRoute (Context context) {
+        int loadedRoute = getPrefs(context).getInt("route", 1);
+
+        return loadedRoute;
+    }
 }

@@ -23,6 +23,7 @@ import com.google.android.gms.maps.model.Polyline;
 import com.google.gson.Gson;
 
 import android.support.v4.content.ContextCompat;
+import android.support.v4.graphics.drawable.DrawableCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.ActionBarDrawerToggle;
@@ -53,9 +54,14 @@ import java.util.ArrayList;
 import java.util.Timer;
 import java.util.TimerTask;
 
+// TO-DO: Check for duplicate stop requests when switching routes
+
 public class MapsActivity extends AppCompatActivity implements OnMapReadyCallback, GoogleMap.OnMapClickListener, GoogleMap.OnMarkerClickListener, NavigationView.OnNavigationItemSelectedListener {
 
-    String API_URL = "http://sc-dev.shadowline.net";
+    private final String API_URL = "http://sc-dev.shadowline.net";
+    private final int SC_UPDATE_INTERVAL = 2000;
+    private final int FAVORITE_UPDATE_INTERVAL = 20000;
+
 
     private BitmapDescriptor STREETCAR_ICON;
     private BitmapDescriptor STOP_ICON;
@@ -69,7 +75,8 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     public ArrayList<Polyline> polylines = new ArrayList<>();
     public FavoriteStops favoriteStops;
 
-    Timer scTimer = new Timer();
+    Timer scTimer;
+    Timer favoriteTimer;
 
     ActionBarDrawerToggle abToggle;
     DrawerLayout drawerLayout;
@@ -94,6 +101,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         JodaTimeAndroid.init(this);
 
         favoriteStops = SettingsManager.getFavoriteStops(getApplicationContext());
+        route = SettingsManager.loadRoute(getApplicationContext());
 
         if (favoriteStops != null) {
             Log.v("Settings contents:", favoriteStops.toString());
@@ -103,7 +111,8 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             favoriteStops = new FavoriteStops();
         }
 
-//        STREETCAR_ICON = BitmapDescriptorFactory.fromBitmap(resizeMapIcons("streetcar",150,150));
+//        Drawable iconDrawable = this.getResources().getDrawable(R.drawable.ic_navigation_black_24dp);
+//        iconDrawable.mutate().setTint(0xFF00FF00);
         STREETCAR_ICON = bitmapDescriptorFromVector(this, R.drawable.ic_navigation_black_24dp);
         STOP_ICON = BitmapDescriptorFactory.fromBitmap(resizeMapIcons("stop_icon",50,50));
 
@@ -134,18 +143,24 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         int id = item.getItemId();
 
         Log.v("Menu item ", "Was clicked");
+        LinearLayout bottomPanel = (LinearLayout) findViewById(R.id.bottom_panel);
+
 
         if (id == R.id.nav_item_slu) {
             route = 2;
+            SettingsManager.saveRoute(getApplicationContext(), route);
             swapViews(item, mNavigationView.getMenu().findItem(R.id.nav_item_fhs), new LatLng(47.621358, -122.338190));
             drawerLayout.closeDrawers();
-            drawFavoritesMenu();
+            bottomPanel.removeAllViews();
+            getFavoritesArrivalTimes();
         }
         else if (id == R.id.nav_item_fhs) {
             route = 1;
+            SettingsManager.saveRoute(getApplicationContext(), route);
             swapViews(item, mNavigationView.getMenu().findItem(R.id.nav_item_slu), new LatLng(47.609809, -122.320826));
             drawerLayout.closeDrawers();
-            drawFavoritesMenu();
+            bottomPanel.removeAllViews();
+            getFavoritesArrivalTimes();
         }
 
         return true;
@@ -165,6 +180,12 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         }
 
         subMenu.clear();
+
+        if (favObj.size() == 0) {
+            subMenu.add(R.id.favorites, 5000, Menu.NONE, "No saved favorites");
+
+            return;
+        }
 
         for (int i = 0; i < favObj.size(); i++) {
             subMenu.add(R.id.favorites, 5000, Menu.NONE, favObj.get(i).stopTitle).setIcon(R.drawable.ic_directions_railway_black_24dp);
@@ -189,8 +210,12 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
         item.setIcon(R.drawable.ic_check_black_24dp);
 
+        setCamera(routeCenter);
+    }
+
+    private void setCamera(LatLng cameraCenter) {
         CameraPosition cameraPosition = new CameraPosition.Builder()
-                .target(routeCenter)
+                .target(cameraCenter)
                 .zoom(15)
                 .build();
         mMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
@@ -214,6 +239,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
         Log.v("Event pause", "onPause() was called");
         scTimer.cancel();
+        favoriteTimer.cancel();
     }
 
     @Override
@@ -223,6 +249,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         Log.v("Event resume", "onResume() was called");
 
         scTimer = new Timer();
+        favoriteTimer = new Timer();
         startTimers();
     }
 
@@ -263,6 +290,25 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
 
+        LatLng cameraCenter;
+
+        MenuItem fhs_item = mNavigationView.getMenu().findItem(R.id.nav_item_fhs);
+        MenuItem slu_item = mNavigationView.getMenu().findItem(R.id.nav_item_slu);
+
+        if (route == 1) {
+            fhs_item.setIcon(R.drawable.ic_check_black_24dp);
+            fhs_item.setChecked(true);
+            slu_item.setIcon(null);
+            cameraCenter = new LatLng(47.609809, -122.320826);
+        }
+        else {
+            slu_item.setIcon(R.drawable.ic_check_black_24dp);
+            slu_item.setChecked(true);
+            fhs_item.setIcon(null);
+            cameraCenter = new LatLng(47.621358, -122.338190);
+        }
+        setCamera(cameraCenter);
+
         mMap.getUiSettings().setRotateGesturesEnabled(false);
 
         mMap.setOnMarkerClickListener(this);
@@ -281,7 +327,14 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
                 updateStreetcars();
             }
-        }, 0, 2000);
+        }, 0, SC_UPDATE_INTERVAL);
+
+        favoriteTimer.scheduleAtFixedRate(new TimerTask(){
+            @Override
+            public void run() {
+                getFavoritesArrivalTimes();
+            }
+        }, 0, FAVORITE_UPDATE_INTERVAL);
     }
 
     private void removeStops() {
@@ -469,13 +522,18 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
     private void createArrivalText(final ArrayList arrivalTimes) {
+        final LinearLayout bottomPanel = (LinearLayout) findViewById(R.id.bottom_panel);
+
+        if (arrivalTimes.size() == 0) {
+            bottomPanel.removeAllViews();
+            return;
+        }
+
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 LinearLayout.LayoutParams lparams = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
                 lparams.setMargins(15, 5, 5, 15);
-
-                LinearLayout bottomPanel = (LinearLayout) findViewById(R.id.bottom_panel);
 
                 /// Create new linearlayout to contain the stop name and star icon
                 LinearLayout stopNameLayout = new LinearLayout(getApplicationContext());
@@ -617,6 +675,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         }
 
         if (favObj.size() == 0) {
+            drawFavoritesMenu();
             return;
         }
         else if (favObj.size() == 1) {
