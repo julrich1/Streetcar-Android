@@ -337,6 +337,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         }, 0, FAVORITE_UPDATE_INTERVAL);
     }
 
+    // abstract
     private void removeStops() {
         for (int i = 0; i < stops.size(); i++) {
             stops.get(i).marker.remove();
@@ -345,12 +346,14 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         stops.clear();
     }
 
+    // abstract
     private void removeRouteLines() {
         for (int i = 0; i < polylines.size(); i++) {
             polylines.get(i).remove();
         }
     }
 
+    // abstract
     private void removeStreetcars() {
         for (int i = 0; i < streetcars.length(); i++) {
             streetcars.get(i).marker.remove();
@@ -461,6 +464,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
                     streetcar.marker.setRotation(streetcar.heading);
                     LatLngInterpolator latLngInterpolator = new LatLngInterpolator.Spherical();
+                    // TO-DO: Check if position changed
                     MarkerAnimation.animateMarkerToICS(streetcar.marker, new LatLng(streetcar.x, streetcar.y), latLngInterpolator);
                 }
 
@@ -491,12 +495,14 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         polylines.add(pl);
     }
 
+    // abstract
     private Bitmap resizeMapIcons(String iconName, int width, int height){
         Bitmap imageBitmap = BitmapFactory.decodeResource(getResources(),getResources().getIdentifier(iconName, "drawable", getPackageName()));
         Bitmap resizedBitmap = Bitmap.createScaledBitmap(imageBitmap, width, height, false);
         return resizedBitmap;
     }
 
+    // abstract
     private String convertKmHrToMph(int speed) {
         return Math.round(speed * 0.62137119223733) + " Mph";
     }
@@ -521,6 +527,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         });
     }
 
+    // ABSTRACT
     private void createArrivalText(final ArrayList arrivalTimes) {
         final LinearLayout bottomPanel = (LinearLayout) findViewById(R.id.bottom_panel);
 
@@ -626,6 +633,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         });
     }
 
+    // abstract
     private void createStreetcarText(final Streetcar streetcar) {
         runOnUiThread(new Runnable() {
             @Override
@@ -725,6 +733,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 //        return BitmapDescriptorFactory.fromBitmap(bm);
 //    }
 
+    // abstract
     private BitmapDescriptor bitmapDescriptorFromVector(Context context, int vectorResId) {
         Drawable vectorDrawable = ContextCompat.getDrawable(context, vectorResId);
         vectorDrawable.setBounds(0, 0, vectorDrawable.getIntrinsicWidth() * 2, vectorDrawable.getIntrinsicHeight() * 2);
