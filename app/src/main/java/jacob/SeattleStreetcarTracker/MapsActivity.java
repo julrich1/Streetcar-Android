@@ -1,15 +1,12 @@
 package jacob.SeattleStreetcarTracker;
 
+import android.Manifest;
 import android.content.Context;
-import android.content.SharedPreferences;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.graphics.Canvas;
-import android.graphics.drawable.Drawable;
+import android.content.pm.PackageManager;
+import android.os.Build;
 import android.support.annotation.Nullable;
-import android.support.design.internal.NavigationMenuView;
 import android.support.design.widget.NavigationView;
-import android.support.v4.app.FragmentActivity;
+import android.support.v4.app.ActivityCompat;
 import android.os.Bundle;
 
 import com.android.volley.RequestQueue;
@@ -23,12 +20,9 @@ import com.google.android.gms.maps.model.Polyline;
 import com.google.gson.Gson;
 
 import android.support.v4.content.ContextCompat;
-import android.support.v4.graphics.drawable.DrawableCompat;
 import android.support.v4.widget.DrawerLayout;
-import android.support.v7.app.ActionBar;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.DividerItemDecoration;
 import android.support.v7.widget.LinearLayoutCompat;
 import android.support.v7.widget.Toolbar;
 import android.util.AttributeSet;
@@ -44,8 +38,6 @@ import android.widget.TextView;
 
 import net.danlew.android.joda.JodaTimeAndroid;
 
-import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -110,7 +102,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         if (favoriteStops == null) {
             favoriteStops = new FavoriteStops();
         }
-        
+
 //        Drawable iconDrawable = this.getResources().getDrawable(R.drawable.ic_navigation_black_24dp);
 //        iconDrawable.mutate().setTint(0xFF00FF00);
         STREETCAR_ICON = ImageHandler.bitmapDescriptorFromVector(this, R.drawable.ic_navigation_black_24dp);
@@ -137,6 +129,33 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             }
         });
     }
+
+    private void enableMyLocation() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED) {
+            Log.v("Location", "Permission denied");
+            // Permission to access the location is missing.
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                    1);
+        }
+        else if (mMap != null) {
+            Log.v("Location", "Permission allowed");
+            mMap.setMyLocationEnabled(true);
+        }
+    }
+
+    public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
+        switch (requestCode) {
+            case 1: {
+                // If request is cancelled, the result arrays are empty.
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED)
+                    enableMyLocation();
+                }
+                return;
+            }
+    }
+
 
     @Override
     public boolean onNavigationItemSelected(MenuItem item) {
@@ -329,9 +348,16 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         setCamera(cameraCenter);
 
         mMap.getUiSettings().setRotateGesturesEnabled(false);
+        mMap.getUiSettings().setMyLocationButtonEnabled(false);
+        mMap.getUiSettings().setMapToolbarEnabled(false);
+        mMap.getUiSettings().setTiltGesturesEnabled(false);
+        mMap.getUiSettings().setIndoorLevelPickerEnabled(false);
+
 
         mMap.setOnMarkerClickListener(this);
         mMap.setOnMapClickListener(this);
+
+        enableMyLocation();
     }
 
     private void startTimers() {
@@ -414,7 +440,6 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
                 for (int i = 0; i < stopsArray.length(); i++) {
                     try {
-                        Log.v("Stop response", stopsArray.toString());
                         Stop stop = gson.fromJson(stopsArray.getJSONObject(i).toString(), Stop.class);
                         stops.add(stop);
                     }
@@ -552,7 +577,6 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 Log.v("Response from arrival", response.toString());
 
                 cb.done(response);
-//                createArrivalText(response);
             }
         });
     }
@@ -590,7 +614,13 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 TextView tv = new TextView(getApplicationContext());
                 tv.setText(arrivalTimes.get(0).toString());
                 tv.setLayoutParams(tvParams);
-                tv.setTextAppearance(R.style.TextAppearance_AppCompat_Large);
+
+                if (Build.VERSION.SDK_INT < 23) {
+                    tv.setTextAppearance(getApplicationContext(), R.style.TextAppearance_AppCompat_Large);
+                } else {
+                    tv.setTextAppearance(R.style.TextAppearance_AppCompat_Large);
+                }
+//                tv.setTextAppearance(getApplicationContext(), R.style.TextAppearance_AppCompat_Large);
 //                tv.setBackgroundColor(0xFFFF0000);
                 stopNameLayout.addView(tv);
                 /// End creating stop title text and params

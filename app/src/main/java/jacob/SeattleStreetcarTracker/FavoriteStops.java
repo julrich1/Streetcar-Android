@@ -109,7 +109,6 @@ public class FavoriteStops {
             stopId = (int) times.get(i).get(0);
 
             for (int j = 0; j < searchObj.size(); j++) {
-                Log.v("Comparison", searchObj.get(i).stopId + " " + stopId);
                 if (searchObj.get(j).stopId == stopId) {
                     ArrayList currentObj = times.get(i);
 
