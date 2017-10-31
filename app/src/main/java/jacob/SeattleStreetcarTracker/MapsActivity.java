@@ -61,13 +61,13 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     private final String API_URL = "http://sc-dev.shadowline.net";
     private final int SC_UPDATE_INTERVAL = 2000;
     private final int FAVORITE_UPDATE_INTERVAL = 20000;
-
-
-    private BitmapDescriptor STREETCAR_ICON;
-    private BitmapDescriptor STOP_ICON;
+    private final int STOP_UPDATE_INTERVAL = 20000;
+    private final int INFO_UPDATE_INTERVAL = 1000;
 
     public static final String REQUEST_TAG = "SCRequests";
 
+    private BitmapDescriptor STREETCAR_ICON;
+    private BitmapDescriptor STOP_ICON;
 
     private GoogleMap mMap;
     public Streetcars streetcars = new Streetcars();
@@ -75,14 +75,18 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     public ArrayList<Polyline> polylines = new ArrayList<>();
     public FavoriteStops favoriteStops;
 
-    Timer scTimer;
-    Timer favoriteTimer;
+    private SelectedItem selectedItem = new SelectedItem();
 
-    ActionBarDrawerToggle abToggle;
-    DrawerLayout drawerLayout;
-    NavigationView mNavigationView;
+    private Timer scTimer;
+    private Timer favoriteTimer;
+    private Timer infoTimer;
+    private Timer stopTimer;
 
-    RequestQueue queue;
+    private ActionBarDrawerToggle abToggle;
+    private DrawerLayout drawerLayout;
+    private NavigationView mNavigationView;
+
+    private RequestQueue queue;
 
     int route = 1;
 
@@ -103,18 +107,14 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         favoriteStops = SettingsManager.getFavoriteStops(getApplicationContext());
         route = SettingsManager.loadRoute(getApplicationContext());
 
-        if (favoriteStops != null) {
-            Log.v("Settings contents:", favoriteStops.toString());
-        }
-        else {
-            Log.v("Settings contents:", "They are null");
+        if (favoriteStops == null) {
             favoriteStops = new FavoriteStops();
         }
-
+        
 //        Drawable iconDrawable = this.getResources().getDrawable(R.drawable.ic_navigation_black_24dp);
 //        iconDrawable.mutate().setTint(0xFF00FF00);
-        STREETCAR_ICON = bitmapDescriptorFromVector(this, R.drawable.ic_navigation_black_24dp);
-        STOP_ICON = BitmapDescriptorFactory.fromBitmap(resizeMapIcons("stop_icon",50,50));
+        STREETCAR_ICON = ImageHandler.bitmapDescriptorFromVector(this, R.drawable.ic_navigation_black_24dp);
+        STOP_ICON = BitmapDescriptorFactory.fromBitmap(ImageHandler.resizeMapIcons(getResources(), getPackageName(), "stop_icon", 50, 50));
 
         drawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
@@ -204,7 +204,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         queue.cancelAll(REQUEST_TAG);
         removeStops();
         removeRouteLines();
-        removeStreetcars();
+        streetcars.removeStreetcars();
         oldItem.setIcon(null);
         oldItem.setChecked(false);
 
@@ -240,6 +240,8 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         Log.v("Event pause", "onPause() was called");
         scTimer.cancel();
         favoriteTimer.cancel();
+        infoTimer.cancel();
+        stopTimer.cancel();
     }
 
     @Override
@@ -250,11 +252,17 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
         scTimer = new Timer();
         favoriteTimer = new Timer();
+        infoTimer = new Timer();
+        stopTimer = new Timer();
         startTimers();
     }
 
     @Override
     public void onMapClick(LatLng latLng) {
+        selectedItem.type = null;
+        selectedItem.id = 0;
+        selectedItem.lastUpdated = 0;
+
         LinearLayout bottomPanel = (LinearLayout) findViewById(R.id.bottom_panel);
         bottomPanel.removeAllViews();
     }
@@ -271,6 +279,10 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
             switch(type) {
                 case "stop":
+                    selectedItem.lastUpdated = 0;
+                    selectedItem.id = id;
+                    selectedItem.type = "stop";
+
                     getArrivalTime(id, new CallbackArrayList() {
                         @Override
                         public void done(ArrayList response) {
@@ -279,7 +291,14 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                     });
                     break;
                 case "streetcar":
-                    createStreetcarText(streetcars.get(streetcars.findByStreetcarId(id)));
+                    int scIndex = streetcars.findByStreetcarId(id);
+
+                    if (scIndex != -1) {
+                        selectedItem.type = "streetcar";
+                        selectedItem.id = id;
+
+                        createStreetcarText(streetcars.get(scIndex));
+                    }
                     break;
             }
         }
@@ -335,9 +354,15 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 getFavoritesArrivalTimes();
             }
         }, 0, FAVORITE_UPDATE_INTERVAL);
+
+        favoriteTimer.scheduleAtFixedRate(new TimerTask(){
+            @Override
+            public void run() {
+                updateInfoWindows();
+            }
+        }, 0, INFO_UPDATE_INTERVAL);
     }
 
-    // abstract
     private void removeStops() {
         for (int i = 0; i < stops.size(); i++) {
             stops.get(i).marker.remove();
@@ -346,20 +371,10 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         stops.clear();
     }
 
-    // abstract
     private void removeRouteLines() {
         for (int i = 0; i < polylines.size(); i++) {
             polylines.get(i).remove();
         }
-    }
-
-    // abstract
-    private void removeStreetcars() {
-        for (int i = 0; i < streetcars.length(); i++) {
-            streetcars.get(i).marker.remove();
-        }
-
-        streetcars.deleteAll();
     }
 
     private void getStreetcars(final Callback cb) {
@@ -448,6 +463,31 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         Log.v("Create marker:", "marker is: " + streetcar.marker.toString());
     }
 
+    private void updateInfoWindows() {
+        if (selectedItem.type == "streetcar") {
+            Log.v("Info window", "Updating streetcar info window");
+            int id = streetcars.findByStreetcarId(selectedItem.id);
+
+            if (id != -1) {
+                createStreetcarText(streetcars.get(id));
+            }
+        }
+        else if (selectedItem.type == "stop") {
+            selectedItem.lastUpdated++;
+
+            if (selectedItem.lastUpdated >= 20) {
+                Log.v("Info window", "Here is where I actually update it" + selectedItem.lastUpdated);
+                selectedItem.lastUpdated = 0;
+                getArrivalTime(selectedItem.id, new CallbackArrayList() {
+                    @Override
+                    public void done(ArrayList response) {
+                        createArrivalText(response);
+                    }
+                });
+            }
+        }
+    }
+
     public void updateStreetcars() {
         getStreetcars(new Callback() {
             @Override
@@ -462,9 +502,11 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                         createMarker(streetcar);
                     }
 
-                    streetcar.marker.setRotation(streetcar.heading);
+                    if (streetcar.marker.getRotation() != streetcar.heading) {
+                        streetcar.marker.setRotation(streetcar.heading);
+                    }
+
                     LatLngInterpolator latLngInterpolator = new LatLngInterpolator.Spherical();
-                    // TO-DO: Check if position changed
                     MarkerAnimation.animateMarkerToICS(streetcar.marker, new LatLng(streetcar.x, streetcar.y), latLngInterpolator);
                 }
 
@@ -495,18 +537,6 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         polylines.add(pl);
     }
 
-    // abstract
-    private Bitmap resizeMapIcons(String iconName, int width, int height){
-        Bitmap imageBitmap = BitmapFactory.decodeResource(getResources(),getResources().getIdentifier(iconName, "drawable", getPackageName()));
-        Bitmap resizedBitmap = Bitmap.createScaledBitmap(imageBitmap, width, height, false);
-        return resizedBitmap;
-    }
-
-    // abstract
-    private String convertKmHrToMph(int speed) {
-        return Math.round(speed * 0.62137119223733) + " Mph";
-    }
-
     private void getArrivalTime(int stopId, final CallbackArrayList cb) {
         String routeString;
 
@@ -527,7 +557,6 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         });
     }
 
-    // ABSTRACT
     private void createArrivalText(final ArrayList arrivalTimes) {
         final LinearLayout bottomPanel = (LinearLayout) findViewById(R.id.bottom_panel);
 
@@ -633,7 +662,6 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         });
     }
 
-    // abstract
     private void createStreetcarText(final Streetcar streetcar) {
         runOnUiThread(new Runnable() {
             @Override
@@ -648,7 +676,6 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 tv.setLayoutParams(lparams);
                 tv.setTextAppearance(R.style.TextAppearance_AppCompat_Large);
                 tv.setText("Last updated: " + streetcar.updated_at);
-                Log.v("Height of textview: ", ""+tv.getHeight());
                 bottomPanel.addView(tv);
 
                 tv = new TextView(getApplicationContext());
@@ -660,7 +687,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 tv = new TextView(getApplicationContext());
                 tv.setLayoutParams(lparams);
                 tv.setTextAppearance(R.style.TextAppearance_AppCompat_Large);
-                tv.setText("Last speed: " + convertKmHrToMph(streetcar.speedkmhr));
+                tv.setText("Last speed: " + streetcars.convertKmHrToMph(streetcar.speedkmhr));
                 bottomPanel.addView(tv);
 
                 tv = new TextView(getApplicationContext());
@@ -720,26 +747,5 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 }
             });
         }
-    }
-
-//    private BitmapDescriptor getBitmapDescriptor(int id) {
-//        Drawable vectorDrawable = context.getDrawable(id);
-//        int h = ((int) Utils.convertDpToPixel(42, context));
-//        int w = ((int) Utils.convertDpToPixel(25, context));
-//        vectorDrawable.setBounds(0, 0, w, h);
-//        Bitmap bm = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
-//        Canvas canvas = new Canvas(bm);
-//        vectorDrawable.draw(canvas);
-//        return BitmapDescriptorFactory.fromBitmap(bm);
-//    }
-
-    // abstract
-    private BitmapDescriptor bitmapDescriptorFromVector(Context context, int vectorResId) {
-        Drawable vectorDrawable = ContextCompat.getDrawable(context, vectorResId);
-        vectorDrawable.setBounds(0, 0, vectorDrawable.getIntrinsicWidth() * 2, vectorDrawable.getIntrinsicHeight() * 2);
-        Bitmap bitmap = Bitmap.createBitmap(vectorDrawable.getIntrinsicWidth() * 2, vectorDrawable.getIntrinsicHeight() * 2, Bitmap.Config.ARGB_8888);
-        Canvas canvas = new Canvas(bitmap);
-        vectorDrawable.draw(canvas);
-        return BitmapDescriptorFactory.fromBitmap(bitmap);
     }
 }

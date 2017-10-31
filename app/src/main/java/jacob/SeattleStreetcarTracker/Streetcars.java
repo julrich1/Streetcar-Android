@@ -69,8 +69,20 @@ public class Streetcars {
         }
     }
 
+    public void removeStreetcars() {
+        for (int i = 0; i < streetcars.size(); i++) {
+            streetcars.get(i).marker.remove();
+        }
+
+        deleteAll();
+    }
+
+
     public void deleteAll() {
         streetcars.clear();
     }
 
+    public String convertKmHrToMph(int speed) {
+        return Math.round(speed * 0.62137119223733) + " Mph";
+    }
 }
