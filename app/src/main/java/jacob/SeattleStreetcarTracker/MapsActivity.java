@@ -62,7 +62,9 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     public static final String REQUEST_TAG = "SCRequests";
 
     private BitmapDescriptor STREETCAR_ICON;
+    private BitmapDescriptor STREETCAR_SELECTED_ICON;
     private BitmapDescriptor STOP_ICON;
+    private BitmapDescriptor STOP_SELECTED_ICON;
     private Bitmap STAR_EMPTY_ICON;
     private Bitmap STAR_FULL_ICON;
 
@@ -84,6 +86,9 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     private NavigationView mNavigationView;
 
     private RequestQueue queue;
+
+    private LatLngInterpolator latLngInterpolator = new LatLngInterpolator.Spherical();
+
 
     int route = 1;
 
@@ -114,7 +119,9 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
 
         STREETCAR_ICON = BitmapDescriptorFactory.fromBitmap(ImageHandler.scaleMapIcons(getResources(), getPackageName(), "streetcar", 0.2f, 0.2f));
+        STREETCAR_SELECTED_ICON = BitmapDescriptorFactory.fromBitmap(ImageHandler.scaleMapIcons(getResources(), getPackageName(), "streetcar_selected", 0.2f, 0.2f));
         STOP_ICON = BitmapDescriptorFactory.fromBitmap(ImageHandler.resizeMapIcons(getResources(), getPackageName(), "stop_icon", 50, 50));
+        STOP_SELECTED_ICON = BitmapDescriptorFactory.fromBitmap(ImageHandler.resizeMapIcons(getResources(), getPackageName(), "stop_icon_selected", 50, 50));
         STAR_EMPTY_ICON = ImageHandler.resizeMapIcons(getResources(), getPackageName(), "star_empty", 80, 80);
         STAR_FULL_ICON = ImageHandler.resizeMapIcons(getResources(), getPackageName(), "star_full", 80, 80);
 
@@ -286,8 +293,49 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         startTimers();
     }
 
-    @Override
+    public void swapStreetcarIcon(int id, BitmapDescriptor newIcon) {
+        int scIndex = streetcars.findByStreetcarId(id);
+
+        if (scIndex != -1) {
+            LatLng currentPosition = streetcars.get(scIndex).marker.getPosition();
+            LatLng targetPosition = new LatLng(streetcars.get(scIndex).x, streetcars.get(scIndex).y);
+            streetcars.get(scIndex).marker.remove();
+
+            streetcars.get(scIndex).x = (float) currentPosition.latitude;
+            streetcars.get(scIndex).y = (float) currentPosition.longitude;
+
+            createMarker(streetcars.get(scIndex), newIcon);
+
+            MarkerAnimation.animateMarkerToICS(streetcars.get(scIndex).marker, targetPosition, latLngInterpolator);
+
+        }
+    }
+
+    public void swapStopIcon(int id, BitmapDescriptor newIcon) {
+        Stop stop = null;
+
+        for (int i = 0; i < stops.size(); i++) {
+            if (stops.get(i).stopId == id) {
+                stop = stops.get(i);
+                break;
+            }
+        }
+
+        if (stop != null) {
+            stop.marker.remove();
+            createStopMarker(stop, newIcon);
+        }
+    }
+
+        @Override
     public void onMapClick(LatLng latLng) {
+        if (selectedItem.type == "streetcar") {
+            swapStreetcarIcon(selectedItem.id, STREETCAR_ICON);
+        }
+        else if (selectedItem.type == "stop") {
+            swapStopIcon(selectedItem.id, STOP_ICON);
+        }
+
         selectedItem.type = null;
         selectedItem.id = 0;
         selectedItem.lastUpdated = 0;
@@ -306,11 +354,22 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
             Log.v("Click vars", type + id);
 
+            if (selectedItem.id != id) {
+                if (selectedItem.type == "streetcar") {
+                    swapStreetcarIcon(selectedItem.id, STREETCAR_ICON);
+                }
+                else if (selectedItem.type == "stop") {
+                    swapStopIcon(selectedItem.id, STOP_ICON);
+                }
+            }
+
             switch(type) {
                 case "stop":
                     selectedItem.lastUpdated = 0;
                     selectedItem.id = id;
                     selectedItem.type = "stop";
+
+                    swapStopIcon(id, STOP_SELECTED_ICON);
 
                     getArrivalTime(id, new CallbackArrayList() {
                         @Override
@@ -325,6 +384,8 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                     if (scIndex != -1) {
                         selectedItem.type = "streetcar";
                         selectedItem.id = id;
+
+                        swapStreetcarIcon(id, STREETCAR_SELECTED_ICON);
 
                         createStreetcarText(streetcars.get(scIndex));
                     }
@@ -478,19 +539,19 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         });
     }
 
-    private MarkerOptions setMarkerOptions(Streetcar streetcar) {
+    private MarkerOptions setMarkerOptions(Streetcar streetcar, BitmapDescriptor icon) {
         LatLng location = new LatLng(streetcar.x, streetcar.y);
 
         return new MarkerOptions()
             .position(location)
-            .icon(STREETCAR_ICON)
+            .icon(icon)
             .anchor(0.5f, 0.5f)
             .rotation(streetcar.heading)
             .zIndex(1.0f);
     }
 
-    private void createMarker(Streetcar streetcar) {
-        streetcar.marker = mMap.addMarker(setMarkerOptions(streetcar));
+    private void createMarker(Streetcar streetcar, BitmapDescriptor icon) {
+        streetcar.marker = mMap.addMarker(setMarkerOptions(streetcar, icon));
         streetcar.marker.setTag("streetcar " + streetcar.streetcar_id);
     }
 
@@ -528,14 +589,13 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
                     if (streetcar.marker == null) {
                         Log.v("Error: ", "Marker not found! Creating one.");
-                        createMarker(streetcar);
+                        createMarker(streetcar, STREETCAR_ICON);
                     }
 
                     if (streetcar.marker.getRotation() != streetcar.heading) {
                         streetcar.marker.setRotation(streetcar.heading);
                     }
 
-                    LatLngInterpolator latLngInterpolator = new LatLngInterpolator.Spherical();
                     MarkerAnimation.animateMarkerToICS(streetcar.marker, new LatLng(streetcar.x, streetcar.y), latLngInterpolator);
                 }
 
@@ -546,15 +606,30 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     private void drawStops() {
         for (int i = 0; i < stops.size(); i++) {
-            LatLng location = new LatLng(stops.get(i).lat, stops.get(i).lon);
-            Marker marker = mMap.addMarker(new MarkerOptions()
-                .icon(STOP_ICON)
+            createStopMarker(stops.get(i), STOP_ICON);
+//            Marker marker = mMap.addMarker(new MarkerOptions()
+//                .icon(STOP_ICON)
+//                .anchor(0.5f, 0.5f)
+//                .position(location));
+
+//            marker.setTag("stop " + stops.get(i).stopId);
+//            stops.get(i).marker = marker;
+        }
+    }
+
+    private Marker createStopMarker(Stop stop, BitmapDescriptor icon) {
+        LatLng location = new LatLng(stop.lat, stop.lon);
+
+        Marker marker = mMap.addMarker(new MarkerOptions()
+                .icon(icon)
                 .anchor(0.5f, 0.5f)
                 .position(location));
 
-            marker.setTag("stop " + stops.get(i).stopId);
-            stops.get(i).marker = marker;
-        }
+        marker.setTag("stop " + stop.stopId);
+
+        stop.marker = marker;
+
+        return marker;
     }
 
     private void drawRouteLines(ArrayList<LatLng> points) {
@@ -578,8 +653,6 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         wr.getArrivalTimes(queue, url, new FetchArrivalTimes() {
             @Override
             public void onTaskCompleted(ArrayList response) {
-                Log.v("Response from arrival", response.toString());
-
                 cb.done(response);
             }
         });
@@ -716,6 +789,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             @Override
             public void run() {
                 int margin = convertDpToPx(10);
+                int marginIndent = convertDpToPx(30);
 
                 LinearLayout bottomPanel = (LinearLayout) findViewById(R.id.bottom_panel);
 
@@ -738,7 +812,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 bottomPanel.addView(tv);
 
                 LinearLayout.LayoutParams idleParams = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-                idleParams.setMargins(margin, 0, 0, 0);
+                idleParams.setMargins(marginIndent, 0, 0, 0);
                 tv = new TextView(getApplicationContext());
                 tv.setLayoutParams(idleParams);
                 tv.setTextAppearance(R.style.TextAppearance_AppCompat_Medium);
@@ -747,7 +821,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 bottomPanel.addView(tv);
 
                 LinearLayout.LayoutParams speedParams = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-                speedParams.setMargins(margin, 0, 0, 0);
+                speedParams.setMargins(marginIndent, 0, 0, 0);
                 tv = new TextView(getApplicationContext());
                 tv.setLayoutParams(speedParams);
                 tv.setTextAppearance(R.style.TextAppearance_AppCompat_Medium);
@@ -756,7 +830,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 bottomPanel.addView(tv);
 
                 LinearLayout.LayoutParams locationParams = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-                locationParams.setMargins(margin, 0, 0, margin);
+                locationParams.setMargins(marginIndent, 0, 0, margin);
                 tv = new TextView(getApplicationContext());
                 tv.setLayoutParams(locationParams);
                 tv.setTextAppearance(R.style.TextAppearance_AppCompat_Medium);
