@@ -81,8 +81,6 @@ public class WebRequest {
                 (Request.Method.GET, url, null, new Response.Listener<JSONObject>() {
                     @Override
                     public void onResponse(JSONObject response) {
-                        Log.v("Response", response.toString());
-
                         callback.onTaskCompleted(parseArrivalObject(response));
                     }
                 }, new Response.ErrorListener() {
@@ -130,7 +128,6 @@ public class WebRequest {
                         ArrayList<ArrayList> arrivals = new ArrayList<>();
                         ArrayList arrival;
 
-                        Log.v("Response", response.toString());
                         try {
                             JSONArray predictions = response.getJSONArray("predictions");
 

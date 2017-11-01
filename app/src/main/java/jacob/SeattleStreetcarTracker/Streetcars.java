@@ -22,7 +22,6 @@ public class Streetcars {
 
         if (currentIndex == -1) {
             streetcars.add(streetcar);
-            Log.v("Add", "Added to array");
         }
         else {
             Marker marker = streetcars.get(currentIndex).marker;
@@ -62,7 +61,6 @@ public class Streetcars {
             DateTime lastUpdated = new DateTime(streetcars.get(i).updated_at);
 
             if (lastUpdated.isBefore(currentTime.minusMinutes(STREETCAR_MARKER_LIFE))) {
-                Log.v("Outdated streetcar!", "Deleting this thing - " + i);
                 streetcars.get(i).marker.remove();
                 delete(i);
             }

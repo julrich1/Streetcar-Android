@@ -113,11 +113,6 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             favoriteStops = new FavoriteStops();
         }
 
-        DisplayMetrics metrics = new DisplayMetrics();
-        getWindowManager().getDefaultDisplay().getMetrics(metrics);
-        Log.v("Display metrics",  metrics.densityDpi +"");
-
-
         STREETCAR_ICON = BitmapDescriptorFactory.fromBitmap(ImageHandler.scaleMapIcons(getResources(), getPackageName(), "streetcar", 0.2f, 0.2f));
         STREETCAR_SELECTED_ICON = BitmapDescriptorFactory.fromBitmap(ImageHandler.scaleMapIcons(getResources(), getPackageName(), "streetcar_selected", 0.2f, 0.2f));
         STOP_ICON = BitmapDescriptorFactory.fromBitmap(ImageHandler.resizeMapIcons(getResources(), getPackageName(), "stop_icon", 50, 50));
@@ -142,7 +137,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         bottomPanel.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Log.v("Clicked", "Click was called on bottom panel");
+                // Blocks closing the info window if open.
             }
         });
     }
@@ -150,14 +145,10 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     private void enableMyLocation() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
                 != PackageManager.PERMISSION_GRANTED) {
-            Log.v("Location", "Permission denied");
             // Permission to access the location is missing.
-            ActivityCompat.requestPermissions(this,
-                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
-                    1);
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 1);
         }
         else if (mMap != null) {
-            Log.v("Location", "Permission allowed");
             mMap.setMyLocationEnabled(true);
         }
     }
@@ -178,9 +169,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     public boolean onNavigationItemSelected(MenuItem item) {
         int id = item.getItemId();
 
-        Log.v("Menu item ", "Was clicked");
         LinearLayout bottomPanel = (LinearLayout) findViewById(R.id.bottom_panel);
-
 
         if (id == R.id.nav_item_slu) {
             route = 2;
@@ -273,7 +262,6 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     protected void onPause() {
         super.onPause();
 
-        Log.v("Event pause", "onPause() was called");
         scTimer.cancel();
         favoriteTimer.cancel();
         infoTimer.cancel();
@@ -283,8 +271,6 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     @Override
     protected void onResume() {
         super.onResume();
-
-        Log.v("Event resume", "onResume() was called");
 
         scTimer = new Timer();
         favoriteTimer = new Timer();
@@ -351,8 +337,6 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
             int id = Integer.parseInt(tag.substring(tag.indexOf(" ") + 1));
             String type = tag.substring(0, tag.indexOf(" "));
-
-            Log.v("Click vars", type + id);
 
             if (selectedItem.id != id) {
                 if (selectedItem.type == "streetcar") {
@@ -588,7 +572,6 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                     streetcar = streetcars.get(i);
 
                     if (streetcar.marker == null) {
-                        Log.v("Error: ", "Marker not found! Creating one.");
                         createMarker(streetcar, STREETCAR_ICON);
                     }
 
@@ -607,13 +590,6 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     private void drawStops() {
         for (int i = 0; i < stops.size(); i++) {
             createStopMarker(stops.get(i), STOP_ICON);
-//            Marker marker = mMap.addMarker(new MarkerOptions()
-//                .icon(STOP_ICON)
-//                .anchor(0.5f, 0.5f)
-//                .position(location));
-
-//            marker.setTag("stop " + stops.get(i).stopId);
-//            stops.get(i).marker = marker;
         }
     }
 
@@ -731,7 +707,6 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 emptyStar.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        Log.v("Clicked", "Click was called on the star!");
                         ImageView star = (ImageView) v;
 
                         Stop clickedStop = (Stop) star.getTag();
@@ -795,12 +770,6 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
                 bottomPanel.removeAllViews();
                 TextView tv;
-
-//                TextView tv = new TextView(getApplicationContext());
-//                tv.setLayoutParams(lparams);
-//                tv.setTextAppearance(R.style.TextAppearance_AppCompat_Large);
-//                tv.setText("Last updated: " + streetcar.updated_at);
-//                bottomPanel.addView(tv);
 
                 LinearLayout.LayoutParams headerParams = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
                 headerParams.setMargins(margin, margin, 0, 0);
@@ -869,7 +838,6 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
                     favoriteStops.searchByStopId((int) response.get(1), route).arrivalTimes = arrivalStr;
 
-                    Log.v("Favorite Event", "Favorite size is 1, and response received. Calling drawFavoritesMenu()");
                     drawFavoritesMenu();
                 }
             });
@@ -883,7 +851,6 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             wr.getMultipleFavoriteArrivalTimes(queue, url, new FetchAllArrivalTimes() {
                 @Override
                 public void onTaskCompleted(ArrayList<ArrayList> response) {
-                    Log.v("Final response", response.toString());
                     favoriteStops.addArrivalTimes(response, route);
                     drawFavoritesMenu();
                 }

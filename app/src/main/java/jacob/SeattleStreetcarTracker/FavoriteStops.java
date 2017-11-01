@@ -113,8 +113,6 @@ public class FavoriteStops {
                     ArrayList currentObj = times.get(i);
 
                     searchObj.get(j).arrivalTimes = createArrivalString(currentObj.subList(1, currentObj.size()));
-
-                    Log.v("Found match", "Adding arrival times");
                     break;
                 }
             }

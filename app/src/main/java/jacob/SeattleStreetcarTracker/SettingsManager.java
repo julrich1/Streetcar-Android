@@ -23,7 +23,6 @@ public class SettingsManager {
         SharedPreferences.Editor editor = getPrefs(context).edit();
 
         editor.putString("stops", favorites_JSON);
-        Log.v("Settings:", "Saving them now with this string: " + favorites_JSON);
         editor.commit();
     }
 
