@@ -17,10 +17,25 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 
 public class ImageHandler {
 
-    static public Bitmap resizeMapIcons(Resources resources, String packageName, String iconName, int width, int height){
+    static public Bitmap resizeMapIcons(Resources resources, String packageName, String iconName, int width, int height) {
         Bitmap imageBitmap = BitmapFactory.decodeResource(resources, resources.getIdentifier(iconName, "drawable", packageName));
         Bitmap resizedBitmap = Bitmap.createScaledBitmap(imageBitmap, width, height, false);
         return resizedBitmap;
+    }
+
+    static public Bitmap scaleMapIcons(Resources resources, String packageName, String iconName, float scaleW, float scaleH) {
+        Bitmap imageBitmap = BitmapFactory.decodeResource(resources, resources.getIdentifier(iconName, "drawable", packageName));
+
+        int width = Math.round(imageBitmap.getWidth() * scaleW);
+        int height= Math.round(imageBitmap.getHeight() * scaleH);
+
+        Bitmap resizedBitmap = Bitmap.createScaledBitmap(imageBitmap, width, height, false);
+        return resizedBitmap;
+    }
+
+    static public Bitmap createBitmap(Resources resources, String packageName, String iconName) {
+        Bitmap imageBitmap = BitmapFactory.decodeResource(resources, resources.getIdentifier(iconName, "drawable", packageName));
+        return imageBitmap;
     }
 
     static public BitmapDescriptor bitmapDescriptorFromVector(Context context, int vectorResId) {

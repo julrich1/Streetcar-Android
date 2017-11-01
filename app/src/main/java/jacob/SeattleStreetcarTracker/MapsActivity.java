@@ -3,6 +3,7 @@ package jacob.SeattleStreetcarTracker;
 import android.Manifest;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.os.Build;
 import android.support.annotation.Nullable;
@@ -62,6 +63,8 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     private BitmapDescriptor STREETCAR_ICON;
     private BitmapDescriptor STOP_ICON;
+    private Bitmap STAR_EMPTY_ICON;
+    private Bitmap STAR_FULL_ICON;
 
     private GoogleMap mMap;
     public Streetcars streetcars = new Streetcars();
@@ -105,10 +108,15 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             favoriteStops = new FavoriteStops();
         }
 
-//        Drawable iconDrawable = this.getResources().getDrawable(R.drawable.ic_navigation_black_24dp);
-//        iconDrawable.mutate().setTint(0xFF00FF00);
-        STREETCAR_ICON = ImageHandler.bitmapDescriptorFromVector(this, R.drawable.ic_navigation_black_24dp);
+        DisplayMetrics metrics = new DisplayMetrics();
+        getWindowManager().getDefaultDisplay().getMetrics(metrics);
+        Log.v("Display metrics",  metrics.densityDpi +"");
+
+
+        STREETCAR_ICON = BitmapDescriptorFactory.fromBitmap(ImageHandler.scaleMapIcons(getResources(), getPackageName(), "streetcar", 0.2f, 0.2f));
         STOP_ICON = BitmapDescriptorFactory.fromBitmap(ImageHandler.resizeMapIcons(getResources(), getPackageName(), "stop_icon", 50, 50));
+        STAR_EMPTY_ICON = ImageHandler.resizeMapIcons(getResources(), getPackageName(), "star_empty", 80, 80);
+        STAR_FULL_ICON = ImageHandler.resizeMapIcons(getResources(), getPackageName(), "star_full", 80, 80);
 
         drawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
@@ -553,7 +561,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         Polyline pl = mMap.addPolyline(new PolylineOptions()
             .addAll(points)
             .width(10)
-            .color(0xB3000000));
+            .color(0x7F000000));
 
         polylines.add(pl);
     }
@@ -639,10 +647,10 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 emptyStar.setLayoutParams(starIconParams);
 
                 if (favoriteStops.isFavorited((int) arrivalTimes.get(1), route)) {
-                    emptyStar.setImageResource(R.drawable.ic_star_black_24dp);
+                    emptyStar.setImageBitmap(STAR_FULL_ICON);
                 }
                 else {
-                    emptyStar.setImageResource(R.drawable.ic_star_border_black_24dp);
+                    emptyStar.setImageBitmap(STAR_EMPTY_ICON);
                 }
 
                 emptyStar.setTag(new Stop((int) arrivalTimes.get(1), (String) arrivalTimes.get(0)));
@@ -657,12 +665,12 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
                         if (favoriteStops.isFavorited(clickedStop.stopId, route)) {
                             favoriteStops.removeFavorite(clickedStop.stopId, route);
-                            star.setImageResource(R.drawable.ic_star_border_black_24dp);
+                            star.setImageBitmap(STAR_EMPTY_ICON);
                             SettingsManager.saveFavoriteStops(getApplicationContext(), favoriteStops);
                         }
                         else {
                             favoriteStops.addFavorite(clickedStop.stopId, clickedStop.title, route);
-                            star.setImageResource(R.drawable.ic_star_black_24dp);
+                            star.setImageBitmap(STAR_FULL_ICON);
                             SettingsManager.saveFavoriteStops(getApplicationContext(), favoriteStops);
                             getFavoritesArrivalTimes();
                         }

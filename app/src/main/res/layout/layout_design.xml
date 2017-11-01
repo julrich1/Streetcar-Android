@@ -62,7 +62,7 @@
                     android:layout_marginEnd="10dp"
                     android:layout_marginTop="10dp"
                     android:layout_weight="0"
-                    app:srcCompat="@drawable/ic_star_border_black_24dp" />
+                    app:srcCompat="@drawable/star_empty" />
 
             </LinearLayout>
 
