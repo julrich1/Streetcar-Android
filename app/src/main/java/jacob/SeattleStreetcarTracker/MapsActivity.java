@@ -37,6 +37,7 @@ import android.view.SubMenu;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import net.danlew.android.joda.JodaTimeAndroid;
@@ -248,7 +249,6 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     @Override
     public View onCreateView(String name, Context context, AttributeSet attrs) {
-
         return super.onCreateView(name, context, attrs);
     }
 
@@ -355,6 +355,8 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
                     swapStopIcon(id, STOP_SELECTED_ICON);
 
+                    drawProgressBar();
+
                     getArrivalTime(id, new CallbackArrayList() {
                         @Override
                         public void done(ArrayList response) {
@@ -370,6 +372,8 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                         selectedItem.id = id;
 
                         swapStreetcarIcon(id, STREETCAR_SELECTED_ICON);
+
+                        drawProgressBar();
 
                         createStreetcarText(streetcars.get(scIndex));
                     }
@@ -653,8 +657,6 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 stopNameLayout.setOrientation(LinearLayout.HORIZONTAL);
                 /// End creation of linearlayout
 
-                bottomPanel.removeAllViews();
-
                 /// Create stop title text and params
                 LinearLayout.LayoutParams tvParams = new LinearLayout.LayoutParams(
                         LinearLayout.LayoutParams.WRAP_CONTENT,
@@ -730,8 +732,6 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 stopNameLayout.addView(emptyStar);
                 // End creating star icon and params
 
-                bottomPanel.addView(stopNameLayout);
-
                 // Create arrival text
                 LinearLayout.LayoutParams lparams = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
 
@@ -749,6 +749,11 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 tv.setTextAppearance(R.style.TextAppearance_AppCompat_Medium);
                 tv.setTextColor(Color.WHITE);
                 tv.setText(arrivalStr);
+
+                bottomPanel.removeAllViews();
+
+                bottomPanel.addView(stopNameLayout);
+
                 bottomPanel.addView(tv);
             }
         });
@@ -756,6 +761,24 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     private int convertDpToPx(int dp){
         return Math.round(dp*(getResources().getDisplayMetrics().xdpi/ DisplayMetrics.DENSITY_DEFAULT));
+    }
+
+    private void drawProgressBar() {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                LinearLayout bottomPanel = (LinearLayout) findViewById(R.id.bottom_panel);
+
+                bottomPanel.removeAllViews();
+
+                ProgressBar pbar = new ProgressBar(getApplicationContext(), null, android.R.attr.progressBarStyleLarge);
+
+                pbar.setIndeterminate(true);
+                pbar.setVisibility(View.VISIBLE);
+
+                bottomPanel.addView(pbar);
+            }
+        });
     }
 
 
