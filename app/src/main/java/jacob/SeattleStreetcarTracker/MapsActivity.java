@@ -3,6 +3,7 @@ package jacob.SeattleStreetcarTracker;
 import android.Manifest;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.os.Build;
 import android.support.annotation.Nullable;
 import android.support.design.widget.NavigationView;
@@ -26,6 +27,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutCompat;
 import android.support.v7.widget.Toolbar;
 import android.util.AttributeSet;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.Menu;
@@ -361,8 +363,6 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
     private void startTimers() {
-        Log.v("Event startTimers", "startTimers() was called");
-
         scTimer.scheduleAtFixedRate(new TimerTask(){
             @Override
             public void run() {
@@ -484,13 +484,10 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     private void createMarker(Streetcar streetcar) {
         streetcar.marker = mMap.addMarker(setMarkerOptions(streetcar));
         streetcar.marker.setTag("streetcar " + streetcar.streetcar_id);
-
-        Log.v("Create marker:", "marker is: " + streetcar.marker.toString());
     }
 
     private void updateInfoWindows() {
         if (selectedItem.type == "streetcar") {
-            Log.v("Info window", "Updating streetcar info window");
             int id = streetcars.findByStreetcarId(selectedItem.id);
 
             if (id != -1) {
@@ -501,7 +498,6 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             selectedItem.lastUpdated++;
 
             if (selectedItem.lastUpdated >= 20) {
-                Log.v("Info window", "Here is where I actually update it" + selectedItem.lastUpdated);
                 selectedItem.lastUpdated = 0;
                 getArrivalTime(selectedItem.id, new CallbackArrayList() {
                     @Override
@@ -592,8 +588,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                LinearLayout.LayoutParams lparams = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-                lparams.setMargins(15, 5, 5, 15);
+                int margin = convertDpToPx(10);
 
                 /// Create new linearlayout to contain the stop name and star icon
                 LinearLayout stopNameLayout = new LinearLayout(getApplicationContext());
@@ -609,11 +604,12 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                         LinearLayout.LayoutParams.WRAP_CONTENT,
                         1f
                 );
-                tvParams.setMargins(15, 5, 5, 15);
+                tvParams.setMargins(margin, margin, 0, 0);
 
                 TextView tv = new TextView(getApplicationContext());
                 tv.setText(arrivalTimes.get(0).toString());
                 tv.setLayoutParams(tvParams);
+
 
                 if (Build.VERSION.SDK_INT < 23) {
                     tv.setTextAppearance(getApplicationContext(), R.style.TextAppearance_AppCompat_Large);
@@ -622,6 +618,10 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 }
 //                tv.setTextAppearance(getApplicationContext(), R.style.TextAppearance_AppCompat_Large);
 //                tv.setBackgroundColor(0xFFFF0000);
+
+                tv.setTextColor(Color.WHITE);
+
+
                 stopNameLayout.addView(tv);
                 /// End creating stop title text and params
 
@@ -631,11 +631,12 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                         LinearLayout.LayoutParams.WRAP_CONTENT,
                         LinearLayout.LayoutParams.WRAP_CONTENT
                 );
+                starIconParams.setMarginEnd(margin);
+                starIconParams.setMargins(0, margin, 0, 0);
                 starIconParams.gravity = Gravity.CENTER_VERTICAL;
 
                 ImageView emptyStar = new ImageView(getApplicationContext());
                 emptyStar.setLayoutParams(starIconParams);
-//                emptyStar.setBackgroundColor(0xFF00FF00);
 
                 if (favoriteStops.isFavorited((int) arrivalTimes.get(1), route)) {
                     emptyStar.setImageResource(R.drawable.ic_star_black_24dp);
@@ -675,6 +676,10 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
                 bottomPanel.addView(stopNameLayout);
 
+                // Create arrival text
+                LinearLayout.LayoutParams lparams = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+
+                lparams.setMargins(margin, 0, 0, margin);
                 String arrivalStr = "Arriving in ";
 
                 for (int i = 2; i < arrivalTimes.size(); i++) {
@@ -685,44 +690,69 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
                 tv = new TextView(getApplicationContext());
                 tv.setLayoutParams(lparams);
-                tv.setTextAppearance(R.style.TextAppearance_AppCompat_Large);
+                tv.setTextAppearance(R.style.TextAppearance_AppCompat_Medium);
+                tv.setTextColor(Color.WHITE);
                 tv.setText(arrivalStr);
                 bottomPanel.addView(tv);
             }
         });
     }
 
+    private int convertDpToPx(int dp){
+        return Math.round(dp*(getResources().getDisplayMetrics().xdpi/ DisplayMetrics.DENSITY_DEFAULT));
+    }
+
+
     private void createStreetcarText(final Streetcar streetcar) {
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                LinearLayout.LayoutParams lparams = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-                lparams.setMargins(15, 5, 5, 15);
+                int margin = convertDpToPx(10);
 
                 LinearLayout bottomPanel = (LinearLayout) findViewById(R.id.bottom_panel);
 
                 bottomPanel.removeAllViews();
-                TextView tv = new TextView(getApplicationContext());
-                tv.setLayoutParams(lparams);
+                TextView tv;
+
+//                TextView tv = new TextView(getApplicationContext());
+//                tv.setLayoutParams(lparams);
+//                tv.setTextAppearance(R.style.TextAppearance_AppCompat_Large);
+//                tv.setText("Last updated: " + streetcar.updated_at);
+//                bottomPanel.addView(tv);
+
+                LinearLayout.LayoutParams headerParams = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+                headerParams.setMargins(margin, margin, 0, 0);
+                tv = new TextView(getApplicationContext());
+                tv.setLayoutParams(headerParams);
                 tv.setTextAppearance(R.style.TextAppearance_AppCompat_Large);
-                tv.setText("Last updated: " + streetcar.updated_at);
+                tv.setTextColor(Color.WHITE);
+                tv.setText("Streetcar");
                 bottomPanel.addView(tv);
 
+                LinearLayout.LayoutParams idleParams = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+                idleParams.setMargins(margin, 0, 0, 0);
                 tv = new TextView(getApplicationContext());
-                tv.setLayoutParams(lparams);
-                tv.setTextAppearance(R.style.TextAppearance_AppCompat_Large);
+                tv.setLayoutParams(idleParams);
+                tv.setTextAppearance(R.style.TextAppearance_AppCompat_Medium);
+                tv.setTextColor(Color.WHITE);
                 tv.setText("Idle time: " + streetcar.idle);
                 bottomPanel.addView(tv);
 
+                LinearLayout.LayoutParams speedParams = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+                speedParams.setMargins(margin, 0, 0, 0);
                 tv = new TextView(getApplicationContext());
-                tv.setLayoutParams(lparams);
-                tv.setTextAppearance(R.style.TextAppearance_AppCompat_Large);
+                tv.setLayoutParams(speedParams);
+                tv.setTextAppearance(R.style.TextAppearance_AppCompat_Medium);
+                tv.setTextColor(Color.WHITE);
                 tv.setText("Last speed: " + streetcars.convertKmHrToMph(streetcar.speedkmhr));
                 bottomPanel.addView(tv);
 
+                LinearLayout.LayoutParams locationParams = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+                locationParams.setMargins(margin, 0, 0, margin);
                 tv = new TextView(getApplicationContext());
-                tv.setLayoutParams(lparams);
-                tv.setTextAppearance(R.style.TextAppearance_AppCompat_Large);
+                tv.setLayoutParams(locationParams);
+                tv.setTextAppearance(R.style.TextAppearance_AppCompat_Medium);
+                tv.setTextColor(Color.WHITE);
                 tv.setText("Location: " + streetcar.x + " " + streetcar.y);
                 bottomPanel.addView(tv);
             }
