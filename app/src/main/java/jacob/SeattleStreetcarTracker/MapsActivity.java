@@ -589,7 +589,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                             icon = STREETCAR_ICON;
                         }
                         else {
-                            icon = STREETCAR_TRANSPARENT_ICON
+                            icon = STREETCAR_TRANSPARENT_ICON;
                         }
 
                         createMarker(streetcar, icon);
@@ -692,10 +692,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                     tv.setTextAppearance(R.style.TextAppearance_AppCompat_Large);
                 }
 //                tv.setTextAppearance(getApplicationContext(), R.style.TextAppearance_AppCompat_Large);
-//                tv.setBackgroundColor(0xFFFF0000);
-
                 tv.setTextColor(Color.WHITE);
-
 
                 stopNameLayout.addView(tv);
                 /// End creating stop title text and params
@@ -762,7 +759,13 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
                 tv = new TextView(getApplicationContext());
                 tv.setLayoutParams(lparams);
-                tv.setTextAppearance(R.style.TextAppearance_AppCompat_Medium);
+
+                if (Build.VERSION.SDK_INT < 23) {
+                    tv.setTextAppearance(getApplicationContext(), R.style.TextAppearance_AppCompat_Medium);
+                } else {
+                    tv.setTextAppearance(R.style.TextAppearance_AppCompat_Medium);
+                }
+
                 tv.setTextColor(Color.WHITE);
                 tv.setText(arrivalStr);
 
@@ -814,7 +817,12 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 headerParams.setMargins(margin, margin, 0, 0);
                 tv = new TextView(getApplicationContext());
                 tv.setLayoutParams(headerParams);
-                tv.setTextAppearance(R.style.TextAppearance_AppCompat_Large);
+
+                if (Build.VERSION.SDK_INT < 23) {
+                    tv.setTextAppearance(getApplicationContext(), R.style.TextAppearance_AppCompat_Large);
+                } else {
+                    tv.setTextAppearance(R.style.TextAppearance_AppCompat_Large);
+                }
                 tv.setTextColor(Color.WHITE);
                 tv.setText("Streetcar");
                 bottomPanel.addView(tv);
@@ -823,7 +831,11 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 idleParams.setMargins(marginIndent, 0, 0, 0);
                 tv = new TextView(getApplicationContext());
                 tv.setLayoutParams(idleParams);
-                tv.setTextAppearance(R.style.TextAppearance_AppCompat_Medium);
+                if (Build.VERSION.SDK_INT < 23) {
+                    tv.setTextAppearance(getApplicationContext(), R.style.TextAppearance_AppCompat_Medium);
+                } else {
+                    tv.setTextAppearance(R.style.TextAppearance_AppCompat_Medium);
+                }
                 tv.setTextColor(Color.WHITE);
                 tv.setText("Idle time: " + streetcar.idle);
                 bottomPanel.addView(tv);
@@ -832,7 +844,11 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 speedParams.setMargins(marginIndent, 0, 0, 0);
                 tv = new TextView(getApplicationContext());
                 tv.setLayoutParams(speedParams);
-                tv.setTextAppearance(R.style.TextAppearance_AppCompat_Medium);
+                if (Build.VERSION.SDK_INT < 23) {
+                    tv.setTextAppearance(getApplicationContext(), R.style.TextAppearance_AppCompat_Medium);
+                } else {
+                    tv.setTextAppearance(R.style.TextAppearance_AppCompat_Medium);
+                }
                 tv.setTextColor(Color.WHITE);
                 tv.setText("Last speed: " + streetcars.convertKmHrToMph(streetcar.speedkmhr));
                 bottomPanel.addView(tv);
@@ -841,7 +857,11 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 locationParams.setMargins(marginIndent, 0, 0, margin);
                 tv = new TextView(getApplicationContext());
                 tv.setLayoutParams(locationParams);
-                tv.setTextAppearance(R.style.TextAppearance_AppCompat_Medium);
+                if (Build.VERSION.SDK_INT < 23) {
+                    tv.setTextAppearance(getApplicationContext(), R.style.TextAppearance_AppCompat_Medium);
+                } else {
+                    tv.setTextAppearance(R.style.TextAppearance_AppCompat_Medium);
+                }
                 tv.setTextColor(Color.WHITE);
                 tv.setText("Location: " + streetcar.x + " " + streetcar.y);
                 bottomPanel.addView(tv);
