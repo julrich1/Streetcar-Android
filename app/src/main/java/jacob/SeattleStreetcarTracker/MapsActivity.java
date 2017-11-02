@@ -340,7 +340,15 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         @Override
     public void onMapClick(LatLng latLng) {
         if (selectedItem.type == "streetcar") {
-            swapStreetcarIcon(selectedItem.id, STREETCAR_ICON);
+            BitmapDescriptor icon = STREETCAR_ICON;
+
+            int index = streetcars.findByStreetcarId(selectedItem.id);
+            if (index != -1) {
+                if (streetcars.get(index).predictable == false) {
+                    icon = STREETCAR_TRANSPARENT_ICON;
+                }
+            }
+            swapStreetcarIcon(selectedItem.id, icon);
         }
         else if (selectedItem.type == "stop") {
             swapStopIcon(selectedItem.id, STOP_ICON);
@@ -364,7 +372,16 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
             if (selectedItem.id != id) {
                 if (selectedItem.type == "streetcar") {
-                    swapStreetcarIcon(selectedItem.id, STREETCAR_ICON);
+                    BitmapDescriptor icon = STREETCAR_ICON;
+
+                    int index = streetcars.findByStreetcarId(selectedItem.id);
+                    if (index != -1) {
+                        if (streetcars.get(index).predictable == false) {
+                            icon = STREETCAR_TRANSPARENT_ICON;
+                        }
+                    }
+
+                    swapStreetcarIcon(selectedItem.id, icon);
                 }
                 else if (selectedItem.type == "stop") {
                     swapStopIcon(selectedItem.id, STOP_ICON);
@@ -600,12 +617,9 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                     streetcar = streetcars.get(i);
 
                     if (streetcar.marker == null) {
-                        BitmapDescriptor icon;
+                        BitmapDescriptor icon = STREETCAR_ICON;
 
-                        if (streetcar.predictable == true) {
-                            icon = STREETCAR_ICON;
-                        }
-                        else {
+                        if (streetcar.predictable == false) {
                             icon = STREETCAR_TRANSPARENT_ICON;
                         }
 
