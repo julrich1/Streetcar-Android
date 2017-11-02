@@ -115,13 +115,30 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             favoriteStops = new FavoriteStops();
         }
 
-        STREETCAR_ICON = BitmapDescriptorFactory.fromBitmap(ImageHandler.scaleMapIcons(getResources(), getPackageName(), "streetcar", 0.2f, 0.2f));
-        STREETCAR_SELECTED_ICON = BitmapDescriptorFactory.fromBitmap(ImageHandler.scaleMapIcons(getResources(), getPackageName(), "streetcar_selected", 0.2f, 0.2f));
-        STREETCAR_TRANSPARENT_ICON = BitmapDescriptorFactory.fromBitmap(ImageHandler.scaleMapIcons(getResources(), getPackageName(), "streetcar_transparent", 0.2f, 0.2f));
-        STOP_ICON = BitmapDescriptorFactory.fromBitmap(ImageHandler.resizeMapIcons(getResources(), getPackageName(), "stop_icon", 50, 50));
-        STOP_SELECTED_ICON = BitmapDescriptorFactory.fromBitmap(ImageHandler.resizeMapIcons(getResources(), getPackageName(), "stop_icon_selected", 50, 50));
-        STAR_EMPTY_ICON = ImageHandler.resizeMapIcons(getResources(), getPackageName(), "star_empty", 80, 80);
-        STAR_FULL_ICON = ImageHandler.resizeMapIcons(getResources(), getPackageName(), "star_full", 80, 80);
+        DisplayMetrics dm = new DisplayMetrics();
+        getWindowManager().getDefaultDisplay().getMetrics(dm);
+
+// will either be DENSITY_LOW, DENSITY_MEDIUM or DENSITY_HIGH
+        int dpiClassification = dm.densityDpi;
+
+        Log.v("Density", dpiClassification +"");
+
+
+        STREETCAR_ICON = BitmapDescriptorFactory.fromBitmap(ImageHandler.createBitmap(getResources(), getPackageName(), "streetcar"));
+        STREETCAR_SELECTED_ICON = BitmapDescriptorFactory.fromBitmap(ImageHandler.createBitmap(getResources(), getPackageName(), "streetcar_selected"));
+        STREETCAR_TRANSPARENT_ICON = BitmapDescriptorFactory.fromBitmap(ImageHandler.createBitmap(getResources(), getPackageName(), "streetcar_transparent"));
+        STOP_ICON = BitmapDescriptorFactory.fromBitmap(ImageHandler.createBitmap(getResources(), getPackageName(), "stop_icon"));
+        STOP_SELECTED_ICON = BitmapDescriptorFactory.fromBitmap(ImageHandler.createBitmap(getResources(), getPackageName(), "stop_icon_selected"));
+        STAR_EMPTY_ICON = ImageHandler.createBitmap(getResources(), getPackageName(), "star_empty");
+        STAR_FULL_ICON = ImageHandler.createBitmap(getResources(), getPackageName(), "star_full");
+
+//        STREETCAR_ICON = BitmapDescriptorFactory.fromBitmap(ImageHandler.scaleMapIcons(getResources(), getPackageName(), "streetcar", 0.2f, 0.2f));
+//        STREETCAR_SELECTED_ICON = BitmapDescriptorFactory.fromBitmap(ImageHandler.scaleMapIcons(getResources(), getPackageName(), "streetcar_selected", 0.2f, 0.2f));
+//        STREETCAR_TRANSPARENT_ICON = BitmapDescriptorFactory.fromBitmap(ImageHandler.scaleMapIcons(getResources(), getPackageName(), "streetcar_transparent", 0.2f, 0.2f));
+//        STOP_ICON = BitmapDescriptorFactory.fromBitmap(ImageHandler.resizeMapIcons(getResources(), getPackageName(), "stop_icon", 50, 50));
+//        STOP_SELECTED_ICON = BitmapDescriptorFactory.fromBitmap(ImageHandler.resizeMapIcons(getResources(), getPackageName(), "stop_icon_selected", 50, 50));
+//        STAR_EMPTY_ICON = ImageHandler.resizeMapIcons(getResources(), getPackageName(), "star_empty", 80, 80);
+//        STAR_FULL_ICON = ImageHandler.resizeMapIcons(getResources(), getPackageName(), "star_full", 80, 80);
 
         drawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
