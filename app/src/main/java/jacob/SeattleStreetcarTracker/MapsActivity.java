@@ -64,6 +64,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     private BitmapDescriptor STREETCAR_ICON;
     private BitmapDescriptor STREETCAR_SELECTED_ICON;
+    private BitmapDescriptor STREETCAR_TRANSPARENT_ICON;
     private BitmapDescriptor STOP_ICON;
     private BitmapDescriptor STOP_SELECTED_ICON;
     private Bitmap STAR_EMPTY_ICON;
@@ -116,6 +117,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
         STREETCAR_ICON = BitmapDescriptorFactory.fromBitmap(ImageHandler.scaleMapIcons(getResources(), getPackageName(), "streetcar", 0.2f, 0.2f));
         STREETCAR_SELECTED_ICON = BitmapDescriptorFactory.fromBitmap(ImageHandler.scaleMapIcons(getResources(), getPackageName(), "streetcar_selected", 0.2f, 0.2f));
+        STREETCAR_TRANSPARENT_ICON = BitmapDescriptorFactory.fromBitmap(ImageHandler.scaleMapIcons(getResources(), getPackageName(), "streetcar_transparent", 0.2f, 0.2f));
         STOP_ICON = BitmapDescriptorFactory.fromBitmap(ImageHandler.resizeMapIcons(getResources(), getPackageName(), "stop_icon", 50, 50));
         STOP_SELECTED_ICON = BitmapDescriptorFactory.fromBitmap(ImageHandler.resizeMapIcons(getResources(), getPackageName(), "stop_icon_selected", 50, 50));
         STAR_EMPTY_ICON = ImageHandler.resizeMapIcons(getResources(), getPackageName(), "star_empty", 80, 80);
@@ -193,37 +195,42 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
     private void drawFavoritesMenu() {
-        MenuItem favoriteItem = mNavigationView.getMenu().findItem(R.id.favorite);
-        SubMenu subMenu = favoriteItem.getSubMenu();
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                MenuItem favoriteItem = mNavigationView.getMenu().findItem(R.id.favorite);
+                SubMenu subMenu = favoriteItem.getSubMenu();
 
-        ArrayList<FavoriteStop> favObj;
+                ArrayList<FavoriteStop> favObj;
 
-        if (route == 1) {
-            favObj = favoriteStops.FHS;
-        }
-        else {
-            favObj = favoriteStops.SLU;
-        }
+                if (route == 1) {
+                    favObj = favoriteStops.FHS;
+                }
+                else {
+                    favObj = favoriteStops.SLU;
+                }
 
-        subMenu.clear();
+                subMenu.clear();
 
-        if (favObj.size() == 0) {
-            subMenu.add(R.id.favorites, 5000, Menu.NONE, "No saved favorites");
+                if (favObj.size() == 0) {
+                    subMenu.add(R.id.favorites, 5000, Menu.NONE, "No saved favorites");
 
-            return;
-        }
+                    return;
+                }
 
-        for (int i = 0; i < favObj.size(); i++) {
-            subMenu.add(R.id.favorites, 5000, Menu.NONE, favObj.get(i).stopTitle).setIcon(R.drawable.ic_directions_railway_black_24dp);
+                for (int i = 0; i < favObj.size(); i++) {
+                    subMenu.add(R.id.favorites, 5000, Menu.NONE, favObj.get(i).stopTitle).setIcon(R.drawable.ic_directions_railway_black_24dp);
 
-            String arrivalText = favObj.get(i).arrivalTimes;
+                    String arrivalText = favObj.get(i).arrivalTimes;
 
-            if (arrivalText == "") {
-                arrivalText = "Fetching arrival times";
+                    if (arrivalText == "") {
+                        arrivalText = "Fetching arrival times";
+                    }
+
+                    subMenu.add(R.id.favorites, 5001, Menu.NONE, arrivalText);
+                }
             }
-
-            subMenu.add(R.id.favorites, 5001, Menu.NONE, arrivalText);
-        }
+        });
     }
 
     private void swapViews(MenuItem item, MenuItem oldItem, LatLng routeCenter) {
@@ -576,7 +583,16 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                     streetcar = streetcars.get(i);
 
                     if (streetcar.marker == null) {
-                        createMarker(streetcar, STREETCAR_ICON);
+                        BitmapDescriptor icon;
+
+                        if (streetcar.predictable == true) {
+                            icon = STREETCAR_ICON;
+                        }
+                        else {
+                            icon = STREETCAR_TRANSPARENT_ICON
+                        }
+
+                        createMarker(streetcar, icon);
                     }
 
                     if (streetcar.marker.getRotation() != streetcar.heading) {
