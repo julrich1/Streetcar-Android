@@ -22,6 +22,7 @@ import java.util.ArrayList;
 
 public class WebRequest {
     public static final String REQUEST_TAG = "SCRequests";
+    public static final String ARRIVAL_REQUEST_TAG = "SCArrivals";
 
 
     public void streetcarJsonRequest(RequestQueue queue, final String url, final FetchStreetcars callback) {
@@ -91,7 +92,7 @@ public class WebRequest {
                     }
                 });
 
-        jsonObjectRequest.setTag(REQUEST_TAG);
+        jsonObjectRequest.setTag(ARRIVAL_REQUEST_TAG);
         queue.add(jsonObjectRequest);
     }
 
