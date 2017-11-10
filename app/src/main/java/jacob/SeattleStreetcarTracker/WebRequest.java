@@ -78,10 +78,10 @@ public class WebRequest {
     }
 
     public void getArrivalTimes(RequestQueue queue, final String url, final FetchArrivalTimes callback) {
-        JsonObjectRequest jsonObjectRequest = new JsonObjectRequest
-                (Request.Method.GET, url, null, new Response.Listener<JSONObject>() {
+        JsonArrayRequest jsonArrayRequest = new JsonArrayRequest
+                (Request.Method.GET, url, null, new Response.Listener<JSONArray>() {
                     @Override
-                    public void onResponse(JSONObject response) {
+                    public void onResponse(JSONArray response) {
                         callback.onTaskCompleted(parseArrivalObject(response));
                     }
                 }, new Response.ErrorListener() {
@@ -92,25 +92,25 @@ public class WebRequest {
                     }
                 });
 
-        jsonObjectRequest.setTag(ARRIVAL_REQUEST_TAG);
-        queue.add(jsonObjectRequest);
+        jsonArrayRequest.setTag(ARRIVAL_REQUEST_TAG);
+        queue.add(jsonArrayRequest);
     }
 
-    private ArrayList parseArrivalObject(JSONObject response) {
+    private ArrayList parseArrivalObject(JSONArray response) {
         ArrayList arrivalTimes = new ArrayList();
 
         try {
-            String stopName = response.getJSONObject("predictions").optString("stopTitle");
+            JSONObject stopDetail = response.getJSONObject(0);
+            String stopName = stopDetail.getString("stopTitle");
             arrivalTimes.add(stopName);
 
-            int stopId = response.getJSONObject("predictions").optInt("stopTag");
+            int stopId = stopDetail.getInt("stopId");
             arrivalTimes.add(stopId);
 
-
-            JSONArray predictionsArray = response.getJSONObject("predictions").getJSONObject("direction").getJSONArray("prediction");
+            JSONArray predictionsArray = stopDetail.getJSONArray("arrivals");
 
             for (int i = 0; i < predictionsArray.length(); i++) {
-                int arrivalTime = predictionsArray.getJSONObject(i).optInt("minutes");
+                int arrivalTime = predictionsArray.getInt(i);
                 arrivalTimes.add(arrivalTime);
             }
         }
@@ -122,26 +122,24 @@ public class WebRequest {
     }
 
     public void getMultipleFavoriteArrivalTimes(RequestQueue queue, final String url, final FetchAllArrivalTimes callback) {
-        JsonObjectRequest jsonObjectRequest = new JsonObjectRequest
-                (Request.Method.GET, url, null, new Response.Listener<JSONObject>() {
+        JsonArrayRequest jsonArrayRequest = new JsonArrayRequest
+                (Request.Method.GET, url, null, new Response.Listener<JSONArray>() {
                     @Override
-                    public void onResponse(JSONObject response) {
+                    public void onResponse(JSONArray response) {
                         ArrayList<ArrayList> arrivals = new ArrayList<>();
                         ArrayList arrival;
 
                         try {
-                            JSONArray predictions = response.getJSONArray("predictions");
-
-                            for (int i = 0; i < predictions.length(); i++) {
+                            for (int i = 0; i < response.length(); i++) {
                                 arrival = new ArrayList();
 
-                                JSONObject prediction = predictions.getJSONObject(i);
-                                arrival.add(prediction.optInt("stopTag"));
+                                JSONObject prediction = response.getJSONObject(i);
+                                arrival.add(prediction.optInt("stopTitle"));
 
-                                JSONArray predictionArray = prediction.getJSONObject("direction").getJSONArray("prediction");
+                                JSONArray predictionArray = prediction.getJSONArray("arrivals");
 
                                 for (int j = 0; j < predictionArray.length(); j++) {
-                                    arrival.add(predictionArray.getJSONObject(j).optInt("minutes"));
+                                    arrival.add(predictionArray.optInt(j));
                                 }
 
                                 arrivals.add(arrival);
@@ -160,7 +158,8 @@ public class WebRequest {
 
                     }
                 });
-        jsonObjectRequest.setTag(REQUEST_TAG);
-        queue.add(jsonObjectRequest);
+
+        jsonArrayRequest.setTag(REQUEST_TAG);
+        queue.add(jsonArrayRequest);
         }
     }

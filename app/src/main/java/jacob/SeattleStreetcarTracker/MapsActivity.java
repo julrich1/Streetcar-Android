@@ -657,12 +657,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
     private void getArrivalTime(int stopId, final CallbackArrayList cb) {
-        String routeString;
-
-        if (route == 1) { routeString = "FHS"; }
-        else { routeString = "SLU"; }
-
-        String url = "http://webservices.nextbus.com/service/publicJSONFeed?command=predictions&a=seattle-sc&r=" + routeString + "&s=" + stopId;
+        String url = API_URL + "/api/routes/" + route + "/arrivals/" + stopId;
 
         WebRequest wr = new WebRequest();
         wr.getArrivalTimes(queue, url, new FetchArrivalTimes() {
@@ -710,7 +705,6 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 } else {
                     tv.setTextAppearance(R.style.TextAppearance_AppCompat_Large);
                 }
-//                tv.setTextAppearance(getApplicationContext(), R.style.TextAppearance_AppCompat_Large);
                 tv.setTextColor(Color.WHITE);
 
                 stopNameLayout.addView(tv);
@@ -921,9 +915,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             });
         }
         else {
-            favoriteStops.getQueryString(route);
-
-            String url = "http://webservices.nextbus.com/service/publicJSONFeed?command=predictionsForMultiStops&a=seattle-sc" + favoriteStops.getQueryString(route);
+            String url = API_URL + "/api/routes/" + route + "/arrivals/" + favoriteStops.getQueryString(route);
 
             WebRequest wr = new WebRequest();
             wr.getMultipleFavoriteArrivalTimes(queue, url, new FetchAllArrivalTimes() {

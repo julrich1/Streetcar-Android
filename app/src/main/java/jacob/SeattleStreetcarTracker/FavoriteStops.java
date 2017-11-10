@@ -77,20 +77,19 @@ public class FavoriteStops {
     }
 
     public String getQueryString(int route) {
-        String textRoute;
         String queryString = "";
 
         if (route == 1) {
-            textRoute = "FHS";
             for (int i = 0; i < FHS.size(); i++) {
-                queryString += "&stops=" + textRoute + "|" + FHS.get(i).stopId;
+//                queryString += "&stops=" + textRoute + "|" + FHS.get(i).stopId;
+                queryString += FHS.get(i).stopId + ",";
             }
 
         }
         else if (route == 2) {
-            textRoute = "SLU";
             for (int i = 0; i < SLU.size(); i++) {
-                queryString += "&stops=" + textRoute + "|" + SLU.get(i).stopId;
+//                queryString += "&stops=" + textRoute + "|" + SLU.get(i).stopId;
+                queryString += SLU.get(i).stopId + ",";
             }
         }
 
