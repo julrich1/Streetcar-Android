@@ -1,7 +1,5 @@
 package jacob.SeattleStreetcarTracker;
 
-import org.json.JSONArray;
-
 import java.util.ArrayList;
 
 /**

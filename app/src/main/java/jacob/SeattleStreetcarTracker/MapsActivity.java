@@ -29,7 +29,6 @@ import android.support.v7.widget.LinearLayoutCompat;
 import android.support.v7.widget.Toolbar;
 import android.util.AttributeSet;
 import android.util.DisplayMetrics;
-import android.util.Log;
 import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -502,7 +501,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                         streetcars.update(streetcar);
                     }
                     catch (JSONException error) {
-                        Log.v("Error", "Error getting JSON Object");
+
                     }
                 }
 
@@ -530,7 +529,6 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                         }
                     }
                     catch (JSONException error) {
-                        Log.v("Error", "Error getting JSON Object");
                     }
                 }
 
@@ -547,7 +545,6 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                         drawRouteLines(points);
                     }
                     catch(JSONException error) {
-                        Log.v("Error", "Error getting path");
                     }
                 }
 

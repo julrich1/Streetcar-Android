@@ -1,12 +1,5 @@
 package jacob.SeattleStreetcarTracker;
 
-import android.content.SharedPreferences;
-import android.util.Log;
-
-import com.android.volley.RequestQueue;
-import com.android.volley.toolbox.Volley;
-import com.google.gson.Gson;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -81,14 +74,12 @@ public class FavoriteStops {
 
         if (route == 1) {
             for (int i = 0; i < FHS.size(); i++) {
-//                queryString += "&stops=" + textRoute + "|" + FHS.get(i).stopId;
                 queryString += FHS.get(i).stopId + ",";
             }
 
         }
         else if (route == 2) {
             for (int i = 0; i < SLU.size(); i++) {
-//                queryString += "&stops=" + textRoute + "|" + SLU.get(i).stopId;
                 queryString += SLU.get(i).stopId + ",";
             }
         }

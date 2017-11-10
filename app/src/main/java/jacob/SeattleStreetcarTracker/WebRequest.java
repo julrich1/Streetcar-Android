@@ -8,7 +8,6 @@ import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonArrayRequest;
 import com.android.volley.toolbox.JsonObjectRequest;
-import com.android.volley.toolbox.StringRequest;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -31,7 +30,6 @@ public class WebRequest {
 
                 @Override
                 public void onResponse(JSONArray response) {
-//                    Log.v("Response", response.toString());
                     callback.onTaskCompleted(response);
                 }
             }, new Response.ErrorListener() {
