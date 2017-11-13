@@ -108,7 +108,7 @@ public class WebRequest {
             JSONArray predictionsArray = stopDetail.getJSONArray("arrivals");
 
             for (int i = 0; i < predictionsArray.length(); i++) {
-                int arrivalTime = predictionsArray.getInt(i);
+                String arrivalTime = predictionsArray.optString(i);
                 arrivalTimes.add(arrivalTime);
             }
         }

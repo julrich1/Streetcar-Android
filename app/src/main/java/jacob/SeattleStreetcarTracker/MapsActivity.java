@@ -501,7 +501,6 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                         streetcars.update(streetcar);
                     }
                     catch (JSONException error) {
-
                     }
                 }
 
