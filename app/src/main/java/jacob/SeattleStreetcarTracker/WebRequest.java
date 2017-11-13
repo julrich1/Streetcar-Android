@@ -130,9 +130,8 @@ public class WebRequest {
                         try {
                             for (int i = 0; i < response.length(); i++) {
                                 arrival = new ArrayList();
-
                                 JSONObject prediction = response.getJSONObject(i);
-                                arrival.add(prediction.optInt("stopTitle"));
+                                arrival.add(prediction.optInt("stopId"));
 
                                 JSONArray predictionArray = prediction.getJSONArray("arrivals");
 
